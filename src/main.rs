@@ -8,8 +8,10 @@ fn main() {
                 println!("{}", file_name);
             },
         
-        Err(message) =>
-            println!("ERROR: {}", message)
+        Err(message) => {
+            println!("ERROR: {}", message);
+            std::process::exit(1);
+        }
     }
 }
 
