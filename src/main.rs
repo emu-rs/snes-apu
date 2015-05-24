@@ -3,14 +3,13 @@ use std::env;
 
 fn main() {
     match get_file_names() {
-        Ok(file_names) => {
+        Ok(file_names) =>
             for file_name in file_names {
                 println!("{}", file_name);
-            }
-        }
-        Err(message) => {
-            println!("ERROR: {}", message);
-        }
+            },
+        
+        Err(message) =>
+            println!("ERROR: {}", message)
     }
 }
 
