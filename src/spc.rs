@@ -1,6 +1,6 @@
 use binary_reader::BinaryReader;
 
-use std::io::{Result, Error, ErrorKind};
+use std::io::{Result, Error, ErrorKind, Read, BufReader};
 use std::fs::File;
 
 type SpcResult = Result<Spc>;
@@ -19,12 +19,12 @@ struct Spc {
 }
 
 impl Spc {
-    fn load(file_name: String) -> SpcResult {
+    pub fn load(file_name: String) -> SpcResult {
         let mut file = try!(File::open(file_name));
-        let mut r = BinaryReader::new(file);
+        let mut r = BinaryReader::new(BufReader::new(file));
 
         let mut headerBuf: [u8; 33] = [0; 33];
-        
+        try!(r.read(&mut headerBuf));
         
         unrecognized_header("dagnabbit")
     }
