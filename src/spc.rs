@@ -1,3 +1,4 @@
+use std::io;
 use std::fs::File;
 
 struct Spc {
@@ -14,9 +15,9 @@ struct Spc {
 }
 
 impl Spc {
-    fn load(file_name: String) -> Result<Spc> {
+    fn load(file_name: String) -> Result<Spc, io::Error> {
         let mut file = try!(File::open(file_name));
-        
+        Err(io::Error::new(io::ErrorKind::Other, "dagnabbit"))
     }
 }
 

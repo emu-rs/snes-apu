@@ -1,3 +1,6 @@
+mod binary_reader;
+mod spc;
+
 use std::iter;
 use std::env;
 
