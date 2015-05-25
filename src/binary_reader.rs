@@ -1,32 +1,33 @@
-use std::io::Read;
+use std::io::{Read, Result};
 
-struct BinaryReader<R> {
+pub struct BinaryReader<R> {
     read: R
 }
 
 impl<R: Read> BinaryReader<R> {
-    fn new(read: R) -> BinaryReader<R> {
+    pub fn new(read: R) -> BinaryReader<R> {
         BinaryReader { read: read }
     }
     
-    fn read_byte(&mut self) -> u8 {
+    pub fn read_u8(&mut self) -> Result<u8> {
         let mut buf: [u8; 1] = [0; 1];
-        self.read.read(&mut buf);
-        buf[0]
+        try!(self.read.read(&mut buf));
+        Ok(buf[0])
     }
 
-    fn read_le_u16(&mut self) -> u16 {
+    pub fn read_le_u16(&mut self) -> Result<u16> {
         // TODO: Ensure endian
         let mut buf: [u8; 2] = [0; 2];
-        self.read.read(&mut buf);
-        ((buf[1] as u16) << 8) | (buf[0] as u16)
+        try!(self.read.read(&mut buf));
+        Ok(((buf[1] as u16) << 8) | (buf[0] as u16))
     }
     
-    fn read_le_i32(&mut self) -> i32 {
+    pub fn read_le_i32(&mut self) -> Result<i32> {
         // TODO: Ensure endian
         let mut buf: [u8; 4] = [0; 4];
-        self.read.read(&mut buf);
-        (((buf[3] as u32) << 24) | ((buf[2] as u32) << 16) |
-        ((buf[1] as u32) << 8) | (buf[0] as u32)) as i32
+        try!(self.read.read(&mut buf));
+        Ok(
+            (((buf[3] as u32) << 24) | ((buf[2] as u32) << 16) |
+             ((buf[1] as u32) << 8) | (buf[0] as u32)) as i32)
     }
 }

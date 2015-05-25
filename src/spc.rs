@@ -1,5 +1,9 @@
-use std::io;
+use binary_reader::BinaryReader;
+
+use std::io::{Result, Error, ErrorKind};
 use std::fs::File;
+
+type SpcResult = Result<Spc>;
 
 struct Spc {
     header: String,
@@ -15,10 +19,19 @@ struct Spc {
 }
 
 impl Spc {
-    fn load(file_name: String) -> Result<Spc, io::Error> {
+    fn load(file_name: String) -> SpcResult {
         let mut file = try!(File::open(file_name));
-        Err(io::Error::new(io::ErrorKind::Other, "dagnabbit"))
+        let mut r = BinaryReader::new(file);
+
+        let mut headerBuf: [u8; 33] = [0; 33];
+        
+        
+        unrecognized_header("dagnabbit")
     }
+}
+
+fn unrecognized_header(message: &str) -> SpcResult {
+    Err(Error::new(ErrorKind::Other, message))
 }
 
 struct Id666 {
