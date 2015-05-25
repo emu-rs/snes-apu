@@ -1,11 +1,11 @@
-use binary_reader::BinaryReader;
+use binary_reader::{ReadAll, BinaryRead, BinaryReader};
 
-use std::io::{Result, Error, ErrorKind, Read, BufReader};
+use std::io::{Result, Error, ErrorKind, BufReader};
 use std::fs::File;
 
 pub type SpcResult = Result<Spc>;
 
-pub struct Spc {
+pub struct Spc;/* {
     header: String,
     version_minor: i32,
     pc: u16,
@@ -16,33 +16,46 @@ pub struct Spc {
     sp: u8,
     id666_tag: Option<Id666>,
     // TODO: ram, register_data, ipl_rom
-}
+}*/
 
 impl Spc {
     pub fn load(file_name: String) -> SpcResult {
         macro_rules! bad_header {
-            ($message:expr) => (return Err(Error::new(ErrorKind::Other, $message)))
+            ($add_info:expr) => ({
+                let message_text = "Unrecognized SPC header".to_string();
+                let message =
+                    match $add_info {
+                        "" => message_text,
+                        _ => message_text + " (" + $add_info + ")"
+                    };
+                return Err(Error::new(ErrorKind::Other, message));
+            });
+            () => (bad_header!(""))
         }
 
-        macro_rules! assert_header {
-            ($cond:expr, $message:expr) => (if !$cond { bad_header!($message); })
+        macro_rules! assert_header {    
+            ($cond:expr, $message:expr) => (if !$cond { bad_header!($message); });
+            ($cond:expr) => (assert_header!($cond, ""))
         }
         
-        let mut file = try!(File::open(file_name));
+        let file = try!(File::open(file_name));
         let mut r = BinaryReader::new(BufReader::new(file));
 
-        let mut headerBuf: [u8; 33] = [0; 33];
-        try!(r.read(&mut headerBuf));
-        let expected_header_string_bytes = b"SNES-SPC700 Sound File Data v0.30";
+        let mut header_buf = [0; 33];
+        try!(r.read_all(&mut header_buf));
         assert_header!(
-            headerBuf.iter().zip(expected_header_string_bytes.iter()).all(|(x, y)| x == y),
+            header_buf.iter()
+                .zip(b"SNES-SPC700 Sound File Data v0.30".iter())
+                .all(|(x, y)| x == y),
             "Invalid header string");
+
+        assert_header!(try!(r.read_le_u16()) == 0x1a1a);
         
-        bad_header!("dagnabbit")
+        bad_header!("dagnabbit");
     }
 }
 
-pub struct Id666 {
+/*pub struct Id666 {
     song_title: String,
     game_title: String,
     dumper_name: String,
@@ -58,4 +71,4 @@ pub enum Emulator {
     Unknown,
     ZSnes,
     Snes9x
-}
+}*/
