@@ -3,9 +3,9 @@ use binary_reader::BinaryReader;
 use std::io::{Result, Error, ErrorKind, Read, BufReader};
 use std::fs::File;
 
-type SpcResult = Result<Spc>;
+pub type SpcResult = Result<Spc>;
 
-struct Spc {
+pub struct Spc {
     header: String,
     version_minor: i32,
     pc: u16,
@@ -25,6 +25,10 @@ impl Spc {
 
         let mut headerBuf: [u8; 33] = [0; 33];
         try!(r.read(&mut headerBuf));
+        let expected_header_string_bytes = b"SNES-SPC700 Sound File Data v0.30";
+        if !headerBuf.iter().zip(expected_header_string_bytes.iter()).all(|(x, y)| x == y) {
+            return unrecognized_header("Invalid header string");
+        }
         
         unrecognized_header("dagnabbit")
     }
@@ -34,7 +38,7 @@ fn unrecognized_header(message: &str) -> SpcResult {
     Err(Error::new(ErrorKind::Other, message))
 }
 
-struct Id666 {
+pub struct Id666 {
     song_title: String,
     game_title: String,
     dumper_name: String,
@@ -46,7 +50,7 @@ struct Id666 {
     dumping_emulator: Emulator
 }
 
-enum Emulator {
+pub enum Emulator {
     Unknown,
     ZSnes,
     Snes9x
