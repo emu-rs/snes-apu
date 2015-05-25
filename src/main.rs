@@ -31,5 +31,5 @@ fn get_file_names() -> Result<iter::Skip<env::Args>> {
 
 fn play_spc_file(file_name: String) -> Result<()> {
     let spc = try!(Spc::load(file_name));
-    Ok(())
+    unimplemented!()
 }
