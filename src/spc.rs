@@ -1,6 +1,7 @@
 use binary_reader::{ReadAll, BinaryRead, BinaryReader};
 
 use std::io::{Result, Error, ErrorKind, Seek, SeekFrom, BufReader};
+use std::path::Path;
 use std::fs::File;
 
 pub type SpcResult = Result<Spc>;
@@ -21,7 +22,7 @@ pub struct Spc {
 }
 
 impl Spc {
-    pub fn load(file_name: &String) -> SpcResult {
+    pub fn load<P: AsRef<Path>>(path: P) -> SpcResult {
         macro_rules! bad_header {
             ($add_info:expr) => ({
                 let message_text = "Unrecognized SPC header".to_string();
@@ -40,7 +41,7 @@ impl Spc {
             ($cond:expr) => (assert_header!($cond, ""))
         }
         
-        let file = try!(File::open(file_name));
+        let file = try!(File::open(path));
         let mut r = BinaryReader::new(BufReader::new(file));
 
         macro_rules! u8 {
