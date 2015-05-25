@@ -20,22 +20,26 @@ pub struct Spc {
 
 impl Spc {
     pub fn load(file_name: String) -> SpcResult {
+        macro_rules! bad_header {
+            ($message:expr) => (return Err(Error::new(ErrorKind::Other, $message)))
+        }
+
+        macro_rules! assert_header {
+            ($cond:expr, $message:expr) => (if !$cond { bad_header!($message); })
+        }
+        
         let mut file = try!(File::open(file_name));
         let mut r = BinaryReader::new(BufReader::new(file));
 
         let mut headerBuf: [u8; 33] = [0; 33];
         try!(r.read(&mut headerBuf));
         let expected_header_string_bytes = b"SNES-SPC700 Sound File Data v0.30";
-        if !headerBuf.iter().zip(expected_header_string_bytes.iter()).all(|(x, y)| x == y) {
-            return unrecognized_header("Invalid header string");
-        }
+        assert_header!(
+            headerBuf.iter().zip(expected_header_string_bytes.iter()).all(|(x, y)| x == y),
+            "Invalid header string");
         
-        unrecognized_header("dagnabbit")
+        bad_header!("dagnabbit")
     }
-}
-
-fn unrecognized_header(message: &str) -> SpcResult {
-    Err(Error::new(ErrorKind::Other, message))
 }
 
 pub struct Id666 {

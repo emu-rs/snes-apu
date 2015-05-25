@@ -15,8 +15,7 @@ fn main() {
 }
 
 fn play_spc_files() -> Result<()> {
-    let file_names = try!(get_file_names());
-    for file_name in file_names {
+    for file_name in try!(get_file_names()) {
         try!(play_spc_file(file_name));
     }
     Ok(())
