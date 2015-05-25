@@ -5,18 +5,18 @@ use std::fs::File;
 
 pub type SpcResult = Result<Spc>;
 
-pub struct Spc;/* {
-    header: String,
-    version_minor: i32,
+pub struct Spc {
+    header: [u8; 33],
+    version_minor: u8,
     pc: u16,
     a: u8,
     x: u8,
     y: u8,
     psw: u8,
     sp: u8,
-    id666_tag: Option<Id666>,
+    //id666_tag: Option<Id666>,
     // TODO: ram, register_data, ipl_rom
-}*/
+}
 
 impl Spc {
     pub fn load(file_name: String) -> SpcResult {
@@ -41,17 +41,53 @@ impl Spc {
         let file = try!(File::open(file_name));
         let mut r = BinaryReader::new(BufReader::new(file));
 
-        let mut header_buf = [0; 33];
-        try!(r.read_all(&mut header_buf));
+        macro_rules! u8 {
+            () => (try!(r.read_u8()))
+        }
+
+        macro_rules! u16 {
+            () => (try!(r.read_le_u16()))
+        }
+
+        macro_rules! i32 {
+            () => (try!(r.read_le_i32()))
+        }
+
+        let mut header = [0; 33];
+        try!(r.read_all(&mut header));
         assert_header!(
-            header_buf.iter()
+            header.iter()
                 .zip(b"SNES-SPC700 Sound File Data v0.30".iter())
                 .all(|(x, y)| x == y),
             "Invalid header string");
 
-        assert_header!(try!(r.read_le_u16()) == 0x1a1a);
+        assert_header!(u16!() == 0x1a1a);
+
+        let has_id666_tag = match u8!() {
+            0x1a => true,
+            0x1b => false,
+            _ => bad_header!("Unable to determine if file contains ID666 tag")
+        };
+
+        let version_minor = u8!();
+
+        let pc = u16!();
+        let a = u8!();
+        let x = u8!();
+        let y = u8!();
+        let psw = u8!();
+        let sp = u8!();
         
-        bad_header!("dagnabbit");
+        Ok(Spc {
+            header: header,
+            version_minor: version_minor,
+            pc: pc,
+            a: a,
+            x: x,
+            y: y,
+            psw: psw,
+            sp: sp
+        })
     }
 }
 
