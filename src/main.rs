@@ -5,7 +5,7 @@ fn main() {
     match get_file_names() {
         Ok(file_names) =>
             for file_name in file_names {
-                println!("{}", file_name);
+                play_spc(file_name);
             },
         
         Err(message) => {
@@ -21,4 +21,8 @@ fn get_file_names() -> Result<iter::Skip<env::Args>, String> {
         1 => Err("No file(s) specified".to_string()),
         _ => Ok(args.skip(1))
     }
+}
+
+fn play_spc(file_name: String) {
+    println!("{}", file_name);
 }
