@@ -1,4 +1,4 @@
-use std::io::{Read, Result, Error, ErrorKind};
+use std::io::{Result, Error, Read, Seek, SeekFrom, ErrorKind};
 
 pub trait ReadAll : Read {
     fn read_all(&mut self, buf: &mut [u8]) -> Result<()>;
@@ -11,24 +11,30 @@ pub trait BinaryRead : ReadAll {
 }
 
 pub struct BinaryReader<R> {
-    read: R
+    inner: R
 }
 
 impl<R: Read> BinaryReader<R> {
-    pub fn new(read: R) -> BinaryReader<R> {
-        BinaryReader { read: read }
+    pub fn new(inner: R) -> BinaryReader<R> {
+        BinaryReader { inner: inner }
     }
 }
 
 impl<R: Read> Read for BinaryReader<R> {
     fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
-        self.read.read(buf)
+        self.inner.read(buf)
+    }
+}
+
+impl<R: Seek> Seek for BinaryReader<R> {
+    fn seek(&mut self, pos: SeekFrom) -> Result<u64> {
+        self.inner.seek(pos)
     }
 }
 
 impl<R: Read> ReadAll for BinaryReader<R> {
     fn read_all(&mut self, buf: &mut [u8]) -> Result<()> {
-        match self.read.read(buf) {
+        match self.inner.read(buf) {
             Ok(len) if len == buf.len() => Ok(()),
             Ok(_) => Err(Error::new(ErrorKind::Other, "Could not read all bytes")),
             Err(e) => Err(e)

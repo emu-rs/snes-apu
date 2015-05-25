@@ -16,7 +16,7 @@ fn main() {
 
 fn play_spc_files() -> Result<()> {
     for file_name in try!(get_file_names()) {
-        try!(play_spc_file(file_name));
+        try!(play_spc_file(&file_name));
     }
     Ok(())
 }
@@ -29,7 +29,11 @@ fn get_file_names() -> Result<iter::Skip<env::Args>> {
     }
 }
 
-fn play_spc_file(file_name: String) -> Result<()> {
+fn play_spc_file(file_name: &String) -> Result<()> {
     let spc = try!(Spc::load(file_name));
-    unimplemented!()
+
+    println!("SPC: {}", file_name);
+    println!(" Header: {}", String::from_utf8(spc.header.iter().cloned().collect()).unwrap());
+
+    unimplemented!();
 }

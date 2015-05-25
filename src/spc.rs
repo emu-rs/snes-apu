@@ -1,25 +1,27 @@
 use binary_reader::{ReadAll, BinaryRead, BinaryReader};
 
-use std::io::{Result, Error, ErrorKind, BufReader};
+use std::io::{Result, Error, ErrorKind, Seek, SeekFrom, BufReader};
 use std::fs::File;
 
 pub type SpcResult = Result<Spc>;
 
 pub struct Spc {
-    header: [u8; 33],
-    version_minor: u8,
-    pc: u16,
-    a: u8,
-    x: u8,
-    y: u8,
-    psw: u8,
-    sp: u8,
-    //id666_tag: Option<Id666>,
-    // TODO: ram, register_data, ipl_rom
+    pub header: [u8; 33],
+    pub version_minor: u8,
+    pub pc: u16,
+    pub a: u8,
+    pub x: u8,
+    pub y: u8,
+    pub psw: u8,
+    pub sp: u8,
+    //pub id666_tag: Option<Id666>,
+    pub ram: [u8; 0x10000],
+    pub regs: [u8; 128],
+    pub ipl_rom: [u8; 64]
 }
 
 impl Spc {
-    pub fn load(file_name: String) -> SpcResult {
+    pub fn load(file_name: &String) -> SpcResult {
         macro_rules! bad_header {
             ($add_info:expr) => ({
                 let message_text = "Unrecognized SPC header".to_string();
@@ -77,6 +79,17 @@ impl Spc {
         let y = u8!();
         let psw = u8!();
         let sp = u8!();
+
+        // TODO: Read ID666 tag if available
+
+        try!(r.seek(SeekFrom::Start(0x100)));
+        let mut ram = [0; 0x10000];
+        try!(r.read_all(&mut ram));
+        let mut regs = [0; 128];
+        try!(r.read_all(&mut regs));
+        try!(r.seek(SeekFrom::Start(0x101c0)));
+        let mut ipl_rom = [0; 64];
+        try!(r.read_all(&mut ipl_rom));
         
         Ok(Spc {
             header: header,
@@ -86,21 +99,24 @@ impl Spc {
             x: x,
             y: y,
             psw: psw,
-            sp: sp
+            sp: sp,
+            ram: ram,
+            regs: regs,
+            ipl_rom: ipl_rom
         })
     }
 }
 
 /*pub struct Id666 {
-    song_title: String,
-    game_title: String,
-    dumper_name: String,
-    date_dumped: String,
-    seconds_to_play_before_fading_out: i32,
-    fade_out_length: i32,
-    artist_name: String,
-    default_channel_disables: u8,
-    dumping_emulator: Emulator
+    pub song_title: String,
+    pub game_title: String,
+    pub dumper_name: String,
+    pub date_dumped: String,
+    pub seconds_to_play_before_fading_out: i32,
+    pub fade_out_length: i32,
+    pub artist_name: String,
+    pub default_channel_disables: u8,
+    pub dumping_emulator: Emulator
 }
 
 pub enum Emulator {
