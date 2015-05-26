@@ -43,7 +43,6 @@ fn play_spc_file(file_name: &String) -> Result<()> {
     println!(" PSW: {}", spc.psw);
     println!(" SP: {}", spc.sp);
 
-    // TODO: ID666 Tag
     if let Some(id666_tag) = spc.id666_tag {
         println!(" ID666 tag present:");
         println!("  Song title: {}", id666_tag.song_title);
@@ -60,7 +59,9 @@ fn play_spc_file(file_name: &String) -> Result<()> {
             Emulator::ZSnes => "ZSnes",
             Emulator::Snes9x => "Snes9x"
         });
+    } else {
+        println!(" No ID666 tag present.");
     }
 
-    unimplemented!();
+    Ok(())
 }

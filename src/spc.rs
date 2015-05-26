@@ -5,6 +5,10 @@ use std::io::{Result, Error, ErrorKind, Seek, SeekFrom, BufReader};
 use std::path::Path;
 use std::fs::File;
 
+macro_rules! fail {
+    ($expr:expr) => (return Err(Error::new(ErrorKind::Other, $expr)))
+}
+
 pub struct Spc {
     pub header: [u8; 33],
     pub version_minor: u8,
@@ -22,41 +26,23 @@ pub struct Spc {
 
 impl Spc {
     pub fn load<P: AsRef<Path>>(path: P) -> Result<Spc> {
-        macro_rules! bad_header {
-            ($add_info:expr) => ({
-                let message_text = "Unrecognized SPC header".to_string();
-                let message =
-                    match $add_info.len() {
-                        0 => message_text,
-                        _ => format!("{} ({})", message_text, $add_info)
-                    };
-                return Err(Error::new(ErrorKind::Other, message));
-            });
-            () => (bad_header!(""))
-        }
-
-        macro_rules! assert_header {    
-            ($cond:expr, $message:expr) => (if !$cond { bad_header!($message); });
-            ($cond:expr) => (assert_header!($cond, ""))
-        }
-        
         let file = try!(File::open(path));
         let mut r = BinaryReader::new(BufReader::new(file));
 
         let mut header = [0; 33];
         try!(r.read_all(&mut header));
-        assert_header!(
-            header.iter()
-                .zip(b"SNES-SPC700 Sound File Data v0.30".iter())
-                .all(|(x, y)| x == y),
-            "Invalid header string");
+        if header.iter().zip(b"SNES-SPC700 Sound File Data v0.30".iter()).any(|(x, y)| x != y) {
+            fail!("Invalid header string");
+        }
 
-        assert_header!(try!(r.read_le_u16()) == 0x1a1a);
+        if try!(r.read_le_u16()) != 0x1a1a {
+            fail!("Invalid padding bytes");
+        }
 
         let has_id666_tag = match try!(r.read_u8()) {
             0x1a => true,
             0x1b => false,
-            _ => bad_header!("Unable to determine if file contains ID666 tag")
+            _ => fail!("Unable to determine if file contains ID666 tag")
         };
 
         let version_minor = try!(r.read_u8());
@@ -73,7 +59,7 @@ impl Spc {
                 try!(r.seek(SeekFrom::Start(0x2e)));
                 match Id666Tag::load(&mut r) {
                     Ok(x) => Some(x),
-                    Err(e) => bad_header!(format!("Invalid ID666 tag [{}]", e))
+                    Err(e) => fail!(format!("Invalid ID666 tag: {}", e))
                 }
             },
             false => None
@@ -240,7 +226,7 @@ impl Id666Tag {
     fn digit(d: u8) -> Result<i32> {
         match char::from_u32(d as u32) {
             Some(c) if c.is_digit(10) => Ok(c.to_digit(10).unwrap() as i32),
-            _ => Err(Error::new(ErrorKind::Other, "Expected numeric value"))
+            _ => fail!("Expected numeric value")
         }
     }
 
