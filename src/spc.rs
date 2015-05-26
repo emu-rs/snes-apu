@@ -125,10 +125,15 @@ pub enum Emulator {
 
 impl Id666 {
     fn load<R: BinaryRead + Seek>(r: &mut R) -> Result<Id666> {
-        let song_title = Id666::read_string(r, 32);
-        let game_title = Id666::read_string(r, 32);
-        let dumper_name = Id666::read_string(r, 16);
-        let comments = Id666::read_string(r, 32);
+        let song_title = try!(Id666::read_string(r, 32));
+        let game_title = try!(Id666::read_string(r, 32));
+        let dumper_name = try!(Id666::read_string(r, 16));
+        let comments = try!(Id666::read_string(r, 32));
+
+        println!("song title: [{}]", song_title);
+        println!("game title: [{}]", game_title);
+        println!("dumper name: [{}]", dumper_name);
+        println!("comments: [{}]", comments);
 
         // So, apparently, there's really no reliable way to detect whether or not
         //  an id666 tag is in text or binary format. I tried using the date field,
@@ -152,6 +157,35 @@ impl Id666 {
 
         try!(r.seek(SeekFrom::Start(0x9e)));
 
+        if is_text_format {
+            // TODO: Find SPC's to test this with
+            unimplemented!();
+        } else {
+            let year = try!(r.read_le_u16());
+            let month = try!(r.read_u8());
+            let day = try!(r.read_u8());
+            let date_dumped = format!("{}/{}/{}", month, day, year);
+            println!("date dumped: [{}]", date_dumped);
+
+            try!(r.seek(SeekFrom::Start(0xa9)));
+            let seconds_to_play_before_fading_out = try!(r.read_le_u16());
+            println!("seconds to play before fading out: {}", seconds_to_play_before_fading_out);
+            try!(r.read_u8());
+            let fade_out_length = try!(r.read_le_i32());
+            println!("fade out length: {}", fade_out_length);
+        }
+
+        let artist_name = try!(Id666::read_string(r, 32));
+        println!("artis name: [{}]", artist_name);
+
+        let default_channel_disables = try!(r.read_u8());
+
+        let dumping_emulator = match try!(Id666::read_digit(r)) {
+            1 => Emulator::ZSnes,
+            2 => Emulator::Snes9x,
+            _ => Emulator::Unknown
+        };
+
         
         
         unimplemented!();
@@ -160,10 +194,14 @@ impl Id666 {
     fn read_string<R: BinaryRead>(r: &mut R, max_len: i32) -> Result<String> {
         // TODO: Reimplement as iterator or something similar
         let mut ret = "".to_string();
+        let mut has_ended = false;
         for _ in 0..max_len {
-            match char::from_u32(try!(r.read_u8()) as u32) {
-                Some(c) => ret.push(c),
-                _ => break
+            let b = try!(r.read_u8());
+            if !has_ended {
+                match char::from_u32(b as u32) {
+                    Some(c) => ret.push(c),
+                    _ => has_ended = true
+                }
             }
         }
         Ok(ret)
@@ -172,11 +210,21 @@ impl Id666 {
     fn is_text_region<R: BinaryRead>(r: &mut R, len: i32) -> Result<bool> {
         for _ in 0..len {
             if let Some(c) = char::from_u32(try!(r.read_u8()) as u32) {
-                if c != '/' && !c.is_alphabetic() && !c.is_numeric() {
+                if c != '/' && !c.is_alphabetic() && !c.is_digit(10) {
                     return Ok(false);
                 }
             }
         }
         Ok(true)
+    }
+
+    fn read_digit<R: BinaryRead>(r: &mut R) -> Result<i32> {
+        // TODO: Remove debugging code
+        let derp = char::from_u32(try!(r.read_u8()) as u32);
+        println!("DERP: {:?}", derp);
+        match derp {
+            Some(c) if c.is_digit(10) => Ok(c.to_digit(10).unwrap() as i32),
+            _ => Err(Error::new(ErrorKind::Other, "Expected numeric value"))
+        }
     }
 }
