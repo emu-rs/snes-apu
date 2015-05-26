@@ -14,7 +14,7 @@ pub struct Spc {
     pub y: u8,
     pub psw: u8,
     pub sp: u8,
-    pub id666_tag: Option<Id666>,
+    pub id666_tag: Option<Id666Tag>,
     pub ram: [u8; 0x10000],
     pub regs: [u8; 128],
     pub ipl_rom: [u8; 64]
@@ -71,7 +71,7 @@ impl Spc {
         let id666_tag = match has_id666_tag {
             true => {
                 try!(r.seek(SeekFrom::Start(0x2e)));
-                match Id666::load(&mut r) {
+                match Id666Tag::load(&mut r) {
                     Ok(x) => Some(x),
                     Err(e) => bad_header!(format!("Invalid ID666 tag [{}]", e))
                 }
@@ -105,10 +105,11 @@ impl Spc {
     }
 }
 
-pub struct Id666 {
+pub struct Id666Tag {
     pub song_title: String,
     pub game_title: String,
     pub dumper_name: String,
+    pub comments: String,
     pub date_dumped: String,
     pub seconds_to_play_before_fading_out: i32,
     pub fade_out_length: i32,
@@ -123,17 +124,12 @@ pub enum Emulator {
     Snes9x
 }
 
-impl Id666 {
-    fn load<R: BinaryRead + Seek>(r: &mut R) -> Result<Id666> {
-        let song_title = try!(Id666::read_string(r, 32));
-        let game_title = try!(Id666::read_string(r, 32));
-        let dumper_name = try!(Id666::read_string(r, 16));
-        let comments = try!(Id666::read_string(r, 32));
-
-        println!("song title: [{}]", song_title);
-        println!("game title: [{}]", game_title);
-        println!("dumper name: [{}]", dumper_name);
-        println!("comments: [{}]", comments);
+impl Id666Tag {
+    fn load<R: BinaryRead + Seek>(r: &mut R) -> Result<Id666Tag> {
+        let song_title = try!(Id666Tag::read_string(r, 32));
+        let game_title = try!(Id666Tag::read_string(r, 32));
+        let dumper_name = try!(Id666Tag::read_string(r, 16));
+        let comments = try!(Id666Tag::read_string(r, 32));
 
         // So, apparently, there's really no reliable way to detect whether or not
         //  an id666 tag is in text or binary format. I tried using the date field,
@@ -147,10 +143,10 @@ impl Id666 {
         //  appears to be textual data where the length and/or date fields should be.
         //  Still pretty icky, but it works pretty well.
         try!(r.seek(SeekFrom::Start(0x9e)));
-        let is_text_format = match try!(Id666::is_text_region(r, 11)) {
+        let is_text_format = match try!(Id666Tag::is_text_region(r, 11)) {
             true => {
                 try!(r.seek(SeekFrom::Start(0xa9)));
-                try!(Id666::is_text_region(r, 3))
+                try!(Id666Tag::is_text_region(r, 3))
             },
             _ => false
         };
@@ -159,13 +155,9 @@ impl Id666 {
 
         let (date_dumped, seconds_to_play_before_fading_out, fade_out_length) =
             if is_text_format {
-                let mut date_buf = [0; 11];
-                try!(r.read_all(&mut date_buf));
-                
-                // TODO: Don't unwrap; handle potential decoding error properly
-                let date_dumped = String::from_utf8(date_buf.iter().cloned().collect()).unwrap();
-                let seconds_to_play_before_fading_out = try!(Id666::read_number(r, 3));
-                let fade_out_length = try!(Id666::read_number(r, 5));
+                let date_dumped = try!(Id666Tag::read_string(r, 11));
+                let seconds_to_play_before_fading_out = try!(Id666Tag::read_number(r, 3));
+                let fade_out_length = try!(Id666Tag::read_number(r, 5));
                 
                 (date_dumped, seconds_to_play_before_fading_out, fade_out_length)
             } else {
@@ -182,27 +174,31 @@ impl Id666 {
                 try!(r.read_u8());
                 let fade_out_length = try!(r.read_le_i32());
 
-                 (date_dumped, seconds_to_play_before_fading_out, fade_out_length)*/
+                (date_dumped, seconds_to_play_before_fading_out, fade_out_length)*/
             };
 
-        println!("date dumped: [{}]", date_dumped);
-        println!("seconds to play before fading out: {}", seconds_to_play_before_fading_out);
-        println!("fade out length: {}", fade_out_length);
-
-        let artist_name = try!(Id666::read_string(r, 32));
-        println!("artist name: [{}]", artist_name);
+        let artist_name = try!(Id666Tag::read_string(r, 32));
 
         let default_channel_disables = try!(r.read_u8());
 
-        let dumping_emulator = match try!(Id666::read_digit(r)) {
+        let dumping_emulator = match try!(Id666Tag::read_digit(r)) {
             1 => Emulator::ZSnes,
             2 => Emulator::Snes9x,
             _ => Emulator::Unknown
         };
-
         
-        
-        unimplemented!();
+        Ok(Id666Tag {
+            song_title: song_title,
+            game_title: game_title,
+            dumper_name: dumper_name,
+            comments: comments,
+            date_dumped: date_dumped,
+            seconds_to_play_before_fading_out: seconds_to_play_before_fading_out,
+            fade_out_length: fade_out_length,
+            artist_name: artist_name,
+            default_channel_disables: default_channel_disables,
+            dumping_emulator: dumping_emulator
+        })
     }
 
     fn read_string<R: BinaryRead>(r: &mut R, max_len: i32) -> Result<String> {
@@ -238,7 +234,7 @@ impl Id666 {
 
     fn read_digit<R: BinaryRead>(r: &mut R) -> Result<i32> {
         let d = try!(r.read_u8());
-        Id666::digit(d)
+        Id666Tag::digit(d)
     }
 
     fn digit(d: u8) -> Result<i32> {
@@ -256,7 +252,7 @@ impl Id666 {
                 break;
             }
             ret *= 10;
-            ret += try!(Id666::digit(d));
+            ret += try!(Id666Tag::digit(d));
         }
         Ok(ret)
     }
