@@ -157,26 +157,40 @@ impl Id666 {
 
         try!(r.seek(SeekFrom::Start(0x9e)));
 
-        if is_text_format {
-            // TODO: Find SPC's to test this with
-            unimplemented!();
-        } else {
-            let year = try!(r.read_le_u16());
-            let month = try!(r.read_u8());
-            let day = try!(r.read_u8());
-            let date_dumped = format!("{}/{}/{}", month, day, year);
-            println!("date dumped: [{}]", date_dumped);
+        let (date_dumped, seconds_to_play_before_fading_out, fade_out_length) =
+            if is_text_format {
+                let mut date_buf = [0; 11];
+                try!(r.read_all(&mut date_buf));
+                
+                // TODO: Don't unwrap; handle potential decoding error properly
+                let date_dumped = String::from_utf8(date_buf.iter().cloned().collect()).unwrap();
+                let seconds_to_play_before_fading_out = try!(Id666::read_number(r, 3));
+                let fade_out_length = try!(Id666::read_number(r, 5));
+                
+                (date_dumped, seconds_to_play_before_fading_out, fade_out_length)
+            } else {
+                // TODO: Find SPC's to test this with
+                unimplemented!();
+                
+                /*let year = try!(r.read_le_u16());
+                let month = try!(r.read_u8());
+                let day = try!(r.read_u8());
+                let date_dumped = format!("{}/{}/{}", month, day, year);
+                
+                try!(r.seek(SeekFrom::Start(0xa9)));
+                let seconds_to_play_before_fading_out = try!(r.read_le_u16());
+                try!(r.read_u8());
+                let fade_out_length = try!(r.read_le_i32());
 
-            try!(r.seek(SeekFrom::Start(0xa9)));
-            let seconds_to_play_before_fading_out = try!(r.read_le_u16());
-            println!("seconds to play before fading out: {}", seconds_to_play_before_fading_out);
-            try!(r.read_u8());
-            let fade_out_length = try!(r.read_le_i32());
-            println!("fade out length: {}", fade_out_length);
-        }
+                 (date_dumped, seconds_to_play_before_fading_out, fade_out_length)*/
+            };
+
+        println!("date dumped: [{}]", date_dumped);
+        println!("seconds to play before fading out: {}", seconds_to_play_before_fading_out);
+        println!("fade out length: {}", fade_out_length);
 
         let artist_name = try!(Id666::read_string(r, 32));
-        println!("artis name: [{}]", artist_name);
+        println!("artist name: [{}]", artist_name);
 
         let default_channel_disables = try!(r.read_u8());
 
@@ -199,7 +213,7 @@ impl Id666 {
             let b = try!(r.read_u8());
             if !has_ended {
                 match char::from_u32(b as u32) {
-                    Some(c) => ret.push(c),
+                    Some(c) if b != 0 => ret.push(c),
                     _ => has_ended = true
                 }
             }
@@ -208,10 +222,14 @@ impl Id666 {
     }
 
     fn is_text_region<R: BinaryRead>(r: &mut R, len: i32) -> Result<bool> {
+        // TODO: This code is probably shit
         for _ in 0..len {
-            if let Some(c) = char::from_u32(try!(r.read_u8()) as u32) {
-                if c != '/' && !c.is_alphabetic() && !c.is_digit(10) {
-                    return Ok(false);
+            let b = try!(r.read_u8());
+            if b != 0 {
+                if let Some(c) = char::from_u32(b as u32) {
+                    if !c.is_digit(10) && c != '/' {
+                        return Ok(false);
+                    }
                 }
             }
         }
@@ -219,12 +237,27 @@ impl Id666 {
     }
 
     fn read_digit<R: BinaryRead>(r: &mut R) -> Result<i32> {
-        // TODO: Remove debugging code
-        let derp = char::from_u32(try!(r.read_u8()) as u32);
-        println!("DERP: {:?}", derp);
-        match derp {
+        let d = try!(r.read_u8());
+        Id666::digit(d)
+    }
+
+    fn digit(d: u8) -> Result<i32> {
+        match char::from_u32(d as u32) {
             Some(c) if c.is_digit(10) => Ok(c.to_digit(10).unwrap() as i32),
             _ => Err(Error::new(ErrorKind::Other, "Expected numeric value"))
         }
+    }
+
+    fn read_number<R: BinaryRead>(r: &mut R, max_len: i32) -> Result<i32> {
+        let mut ret = 0;
+        for _ in 0..max_len {
+        let d = try!(r.read_u8());
+            if d == 0 {
+                break;
+            }
+            ret *= 10;
+            ret += try!(Id666::digit(d));
+        }
+        Ok(ret)
     }
 }
