@@ -35,5 +35,17 @@ fn play_spc_file(file_name: &String) -> Result<()> {
     println!("SPC: {}", file_name);
     println!(" Header: {}", String::from_utf8(spc.header.iter().cloned().collect()).unwrap());
 
+    println!(" Version Minor: {}", spc.version_minor);
+    println!(" PC: {}", spc.pc);
+    println!(" A: {}", spc.a);
+    println!(" X: {}", spc.x);
+    println!(" Y: {}", spc.y);
+    println!(" PSW: {}", spc.psw);
+    println!(" SP: {}", spc.sp);
+
+    // TODO: ID666 Tag
+
+    
+
     unimplemented!();
 }
