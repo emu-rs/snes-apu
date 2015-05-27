@@ -10,7 +10,6 @@ macro_rules! fail {
 }
 
 pub struct Spc {
-    pub header: [u8; 33],
     pub version_minor: u8,
     pub pc: u16,
     pub a: u8,
@@ -75,7 +74,6 @@ impl Spc {
         try!(r.read_all(&mut ipl_rom));
 
         Ok(Spc {
-            header: header,
             version_minor: version_minor,
             pc: pc,
             a: a,
