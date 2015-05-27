@@ -1,12 +1,10 @@
-mod binary_reader;
-mod spc;
 mod snes_apu;
 
 use std::iter;
 use std::env;
 use std::io::{Result, Error, ErrorKind};
 
-use spc::{Spc, Emulator};
+use snes_apu::spc::{Spc, Emulator};
 
 fn main() {
     if let Err(e) = play_spc_files() {

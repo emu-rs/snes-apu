@@ -1,13 +1,18 @@
-use binary_reader::{ReadAll, BinaryRead, BinaryReader};
-
 use std::char;
 use std::io::{Result, Error, ErrorKind, Seek, SeekFrom, BufReader};
 use std::path::Path;
 use std::fs::File;
+use super::apu::{RAM_LEN, IPL_ROM_LEN};
+use super::binary_reader::{ReadAll, BinaryRead, BinaryReader};
 
 macro_rules! fail {
     ($expr:expr) => (return Err(Error::new(ErrorKind::Other, $expr)))
 }
+
+const REG_LEN: usize = 128;
+const HEADER_LEN: usize = 33;
+const HEADER_BYTES: &'static [u8; HEADER_LEN] =
+    b"SNES-SPC700 Sound File Data v0.30";
 
 pub struct Spc {
     pub version_minor: u8,
@@ -18,9 +23,9 @@ pub struct Spc {
     pub psw: u8,
     pub sp: u8,
     pub id666_tag: Option<Id666Tag>,
-    pub ram: [u8; 0x10000],
-    pub regs: [u8; 128],
-    pub ipl_rom: [u8; 64]
+    pub ram: [u8; RAM_LEN],
+    pub regs: [u8; REG_LEN],
+    pub ipl_rom: [u8; IPL_ROM_LEN]
 }
 
 impl Spc {
@@ -28,9 +33,11 @@ impl Spc {
         let file = try!(File::open(path));
         let mut r = BinaryReader::new(BufReader::new(file));
 
-        let mut header = [0; 33];
+        let mut header = [0; HEADER_LEN];
         try!(r.read_all(&mut header));
-        if header.iter().zip(b"SNES-SPC700 Sound File Data v0.30".iter()).any(|(x, y)| x != y) {
+        if header.iter()
+            .zip(HEADER_BYTES.iter())
+            .any(|(x, y)| x != y) {
             fail!("Invalid header string");
         }
 
@@ -65,12 +72,12 @@ impl Spc {
         };
 
         try!(r.seek(SeekFrom::Start(0x100)));
-        let mut ram = [0; 0x10000];
+        let mut ram = [0; RAM_LEN];
         try!(r.read_all(&mut ram));
-        let mut regs = [0; 128];
+        let mut regs = [0; REG_LEN];
         try!(r.read_all(&mut regs));
         try!(r.seek(SeekFrom::Start(0x101c0)));
-        let mut ipl_rom = [0; 64];
+        let mut ipl_rom = [0; IPL_ROM_LEN];
         try!(r.read_all(&mut ipl_rom));
 
         Ok(Spc {
