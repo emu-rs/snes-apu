@@ -35,9 +35,7 @@ impl Spc {
 
         let mut header = [0; HEADER_LEN];
         try!(r.read_all(&mut header));
-        if header.iter()
-            .zip(HEADER_BYTES.iter())
-            .any(|(x, y)| x != y) {
+        if header.iter().zip(HEADER_BYTES.iter()).any(|(x, y)| x != y) {
             fail!("Invalid header string");
         }
 
