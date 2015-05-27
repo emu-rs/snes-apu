@@ -73,7 +73,7 @@ impl Spc {
         try!(r.seek(SeekFrom::Start(0x101c0)));
         let mut ipl_rom = [0; 64];
         try!(r.read_all(&mut ipl_rom));
-        
+
         Ok(Spc {
             header: header,
             version_minor: version_minor,
@@ -144,17 +144,17 @@ impl Id666Tag {
                 let date_dumped = try!(Id666Tag::read_string(r, 11));
                 let seconds_to_play_before_fading_out = try!(Id666Tag::read_number(r, 3));
                 let fade_out_length = try!(Id666Tag::read_number(r, 5));
-                
+
                 (date_dumped, seconds_to_play_before_fading_out, fade_out_length)
             } else {
                 // TODO: Find SPC's to test this with
                 unimplemented!();
-                
+
                 /*let year = try!(r.read_le_u16());
                 let month = try!(r.read_u8());
                 let day = try!(r.read_u8());
                 let date_dumped = format!("{}/{}/{}", month, day, year);
-                
+
                 try!(r.seek(SeekFrom::Start(0xa9)));
                 let seconds_to_play_before_fading_out = try!(r.read_le_u16());
                 try!(r.read_u8());
@@ -172,7 +172,7 @@ impl Id666Tag {
             2 => Emulator::Snes9x,
             _ => Emulator::Unknown
         };
-        
+
         Ok(Id666Tag {
             song_title: song_title,
             game_title: game_title,

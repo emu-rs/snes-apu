@@ -55,7 +55,7 @@ impl<R: Read> BinaryRead for BinaryReader<R> {
         try!(self.read_all(&mut buf));
         Ok(((buf[1] as u16) << 8) | (buf[0] as u16))
     }
-    
+
     fn read_le_i32(&mut self) -> Result<i32> {
         // TODO: Ensure endian
         let mut buf = [0; 4];

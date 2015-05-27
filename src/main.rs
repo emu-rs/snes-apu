@@ -1,5 +1,6 @@
 mod binary_reader;
 mod spc;
+mod snes_apu;
 
 use std::iter;
 use std::env;
