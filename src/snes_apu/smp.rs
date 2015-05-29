@@ -238,7 +238,13 @@ impl<'a> Smp<'a> {
         y
     }
 
-
+    fn adw_op(&mut self, x: u16, y: u16) -> u16 {
+        self.psw_c = false;
+        let mut ret = self.adc_op(x as u8, y as u8) as u16;
+        ret |= (self.adc_op((x >> 8) as u8, (y >> 8) as u8) as u16) << 8;
+        self.psw_z = ret == 0;
+        ret
+    }
 
     fn run(&mut self, target_cycles: i32) -> i32 {
         0 // TODO
