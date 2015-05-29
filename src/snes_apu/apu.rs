@@ -66,4 +66,8 @@ impl Apu {
         self.is_ipl_rom_enabled = true;
         self.dsp_reg_address = 0;
     }
+
+    pub fn cpu_cycles_callback(&mut self, num_cycles: i32) {
+        // TODO
+    }
 }

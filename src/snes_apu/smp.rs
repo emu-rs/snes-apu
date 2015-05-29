@@ -1,5 +1,10 @@
-pub struct Smp {
-    // TODO: emulator
+// TODO: This is a placeholder before I start generalizing traits
+// from the old code.
+use super::apu::Apu;
+
+pub struct Smp<'a> {
+    emulator: &'a mut Apu,
+
     reg_pc: u16,
     reg_a: u8,
     reg_x: u8,
@@ -12,7 +17,6 @@ pub struct Smp {
     psw_p: bool,
     psw_v: bool,
     psw_n: bool,
-
     // TODO: Look up some more behavior for I and B. Can't seem to find much
     // but some instructions DO set them.
     psw_i: bool,
@@ -21,9 +25,11 @@ pub struct Smp {
     cycle_count: i32
 }
 
-impl Smp {
-    pub fn new() -> Smp {
+impl<'a> Smp<'a> {
+    pub fn new(emulator: &'a mut Apu) -> Smp<'a> {
         let mut ret = Smp {
+            emulator: emulator,
+
             reg_pc: 0,
             reg_a: 0,
             reg_x: 0,
@@ -86,7 +92,7 @@ impl Smp {
     }
 
     fn cycles(&mut self, num_cycles: i32) {
-        // TODO: notify emulator!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        self.emulator.cpu_cycles_callback(num_cycles);
         self.cycle_count += num_cycles;
     }
 }
