@@ -101,6 +101,113 @@ impl<'a> Smp<'a> {
         self.cycle_count += num_cycles;
     }
 
+    fn read_op(&mut self, addr: u16) -> u8 {
+        self.cycles(1);
+        self.emulator.read_byte(addr as u32)
+    }
+
+    fn write_op(&mut self, addr: u16, value: u8) {
+        self.cycles(1);
+        self.emulator.write_byte(addr as u32, value);
+    }
+
+    fn read_pc_op(&mut self) -> u8 {
+        let addr = self.reg_pc;
+        self.reg_pc += 1;
+        let ret = self.read_op(addr);
+        ret
+    }
+
+    fn read_sp_op(&mut self) -> u8 {
+        self.reg_sp += 1;
+        let addr = 0x0100 | (self.reg_sp as u16);
+        self.read_op(addr)
+    }
+
+    fn write_sp_op(&mut self, value: u8) {
+        let addr = 0x0100 | (self.reg_sp as u16);
+        self.reg_sp -= 1;
+        self.write_op(addr, value);
+    }
+
+    fn read_dp_op(&mut self, addr: u8) -> u8 {
+        let addr = (if self.psw_p { 0x0100 } else { 0 }) | (addr as u16);
+        self.read_op(addr)
+    }
+
+    fn write_dp_op(&mut self, addr: u8, value: u8) {
+        let addr = (if self.psw_p { 0x0100 } else { 0 }) | (addr as u16);
+        self.write_op(addr, value);
+    }
+
+    fn set_psw_n_z_op(&mut self, x: u32) {
+        self.psw_n = Smp::is_negative(x);
+        self.psw_z = x == 0;
+    }
+
+    fn adc_op(&mut self, x: u8, y: u8) -> u8 {
+        let x = x as u32;
+        let y = y as u32;
+        let r = x + y + (if self.psw_c { 1 } else { 0 });
+        self.psw_n = Smp::is_negative(r);
+        self.psw_v = (!(x ^ y) & (x ^ r) & 0x80) != 0;
+        self.psw_h = ((x ^ y ^ r) & 0x10) != 0;
+        self.psw_z = (r & 0xff) == 0;
+        self.psw_c = r > 0xff;
+        (r & 0xff) as u8
+    }
+
+    fn and_op(&mut self, x: u8, y: u8) -> u8 {
+        let ret = x & y;
+        self.set_psw_n_z_op(ret as u32);
+        ret
+    }
+
+    fn asl_op(&mut self, x: u8) -> u8 {
+        self.psw_c = Smp::is_negative(x as u32);
+        let ret = x << 1;
+        self.set_psw_n_z_op(ret as u32);
+        ret
+    }
+
+    fn cmp_op(&mut self, x: u8, y: u8) -> u8 {
+        let r = (x as i32) - (y as i32);
+        self.psw_n = (r & 0x80) != 0;
+        self.psw_z = (r & 0xff) == 0;
+        self.psw_c = r >= 0;
+        x
+    }
+
+    fn dec_op(&mut self, x: u8) -> u8 {
+        let ret = x - 1;
+        self.set_psw_n_z_op(ret as u32);
+        ret
+    }
+
+    fn eor_op(&mut self, x: u8, y: u8) -> u8 {
+        let ret = x ^ y;
+        self.set_psw_n_z_op(ret as u32);
+        ret
+    }
+
+    fn inc_op(&mut self, x: u8) -> u8 {
+        let ret = x + 1;
+        self.set_psw_n_z_op(ret as u32);
+        ret
+    }
+
+    fn ld_op(&mut self, _: u8, y: u8) -> u8 {
+        self.set_psw_n_z_op(y as u32);
+        y
+    }
+
+    fn lsr_op(&mut self, x: u8) -> u8 {
+        self.psw_c = (x & 0x01) != 0;
+        let ret = x >> 1;
+        self.set_psw_n_z_op(ret as u32);
+        ret
+    }
+
     fn run(&mut self, target_cycles: i32) -> i32 {
         0 // TODO
     }

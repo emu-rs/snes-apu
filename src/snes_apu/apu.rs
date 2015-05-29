@@ -70,4 +70,12 @@ impl Apu {
     pub fn cpu_cycles_callback(&mut self, num_cycles: i32) {
         // TODO
     }
+
+    pub fn read_byte(&mut self, address: u32) -> u8 {
+        0 // TODO
+    }
+
+    pub fn write_byte(&mut self, address: u32, value: u8) {
+        // TODO
+    }
 }
