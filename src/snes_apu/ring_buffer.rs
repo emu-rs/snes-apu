@@ -4,7 +4,7 @@ use super::apu::SAMPLE_RATE;
 // but rust does not currently have any facilities for this.
 const BUFFER_SIZE: usize = SAMPLE_RATE * 2;
 
-struct RingBuffer {
+pub struct RingBuffer {
     left_buffer: [i16; BUFFER_SIZE],
     right_buffer: [i16; BUFFER_SIZE],
     write_pos: i32,

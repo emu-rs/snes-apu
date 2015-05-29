@@ -1,5 +1,6 @@
 use super::spc::Spc;
 use super::timer::Timer;
+use super::ring_buffer::RingBuffer;
 
 pub const SAMPLE_RATE: usize = 32000;
 
@@ -19,7 +20,10 @@ static DEFAULT_IPL_ROM: [u8; IPL_ROM_LEN] = [
 pub struct Apu {
     ram: [u8; RAM_LEN],
     ipl_rom: [u8; IPL_ROM_LEN],
+
     timers: [Timer; 3],
+
+    overflow_buffer: RingBuffer,
 
     is_ipl_rom_enabled: bool,
     dsp_reg_address: u8
@@ -32,6 +36,8 @@ impl Apu {
             ipl_rom: [0; IPL_ROM_LEN],
 
             timers: [Timer::new(256), Timer::new(256), Timer::new(32)],
+
+            overflow_buffer: RingBuffer::new(),
 
             is_ipl_rom_enabled: true,
             dsp_reg_address: 0
