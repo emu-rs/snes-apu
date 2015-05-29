@@ -208,6 +208,38 @@ impl<'a> Smp<'a> {
         ret
     }
 
+    fn or_op(&mut self, x: u8, y: u8) -> u8 {
+        let ret = x | y;
+        self.set_psw_n_z_op(ret as u32);
+        ret
+    }
+
+    fn rol_op(&mut self, x: u8) -> u8 {
+        let carry = if self.psw_c { 1 } else { 0 };
+        self.psw_c = (x & 0x80) != 0;
+        let ret = (x << 1) | carry;
+        self.set_psw_n_z_op(ret as u32);
+        ret
+    }
+
+    fn ror_op(&mut self, x: u8) -> u8 {
+        let carry = if self.psw_c { 0x80 } else { 0 };
+        self.psw_c = (x & 0x01) != 0;
+        let ret = carry | (x >> 1);
+        self.set_psw_n_z_op(ret as u32);
+        ret
+    }
+
+    fn sbc_op(&mut self, x: u8, y: u8) -> u8 {
+        self.adc_op(x, !y)
+    }
+
+    fn st_op(&mut self, _: u8, y: u8) -> u8 {
+        y
+    }
+
+
+
     fn run(&mut self, target_cycles: i32) -> i32 {
         0 // TODO
     }
