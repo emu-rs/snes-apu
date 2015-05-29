@@ -1,6 +1,8 @@
 use super::spc::Spc;
 use super::timer::Timer;
 
+pub const SAMPLE_RATE: usize = 32000;
+
 pub const RAM_LEN: usize = 0x10000;
 
 pub const IPL_ROM_LEN: usize = 64;
