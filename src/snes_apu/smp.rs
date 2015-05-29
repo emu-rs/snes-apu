@@ -1,3 +1,8 @@
+// TODO: This will panic on certain opcodes. The ideas I have for cpu_lang
+// will probably fix it; we'll see. For now tho, I'm gonna leave it as-is;
+// I can imagine fixing it trivially might lead to performance problems.
+// I'll deal with it after the port is finished.
+
 // TODO: This is a placeholder before I start generalizing traits
 // from the old code.
 use super::apu::Apu;
@@ -94,5 +99,9 @@ impl<'a> Smp<'a> {
     fn cycles(&mut self, num_cycles: i32) {
         self.emulator.cpu_cycles_callback(num_cycles);
         self.cycle_count += num_cycles;
+    }
+
+    fn run(&mut self, target_cycles: i32) -> i32 {
+        0 // TODO
     }
 }
