@@ -2,7 +2,9 @@ mod snes_apu;
 
 use std::iter;
 use std::env;
-use std::io::{Result, Error, ErrorKind};
+use std::io::{Result, Error, ErrorKind, Write, stdout, stdin};
+use std::thread;
+use std::sync::{Arc, Mutex};
 
 use snes_apu::spc::{Spc, Emulator};
 
@@ -59,6 +61,39 @@ fn play_spc_file(file_name: &String) -> Result<()> {
     } else {
         println!(" No ID666 tag present.");
     }
+
+    println!("Return quits.");
+    try!(wait_for_key_press_with_busy_icon());
+
+    Ok(())
+}
+
+// TODO: This function is super thread-safe but can panic XD
+fn wait_for_key_press_with_busy_icon() -> Result<()> {
+    let is_done = Arc::new(Mutex::new(false));
+
+    let thread_is_done = is_done.clone();
+    let handle = thread::spawn(move || {
+        let chars = ['-', '/', '|', '\\'];
+        let mut char_index = 0;
+        loop {
+            if *(thread_is_done.lock().unwrap()) {
+                break;
+            }
+
+            print!("\r[{}]", chars[char_index]);
+            stdout().flush().unwrap();
+            char_index = (char_index + 1) % chars.len();
+
+            thread::sleep_ms(5);
+        }
+        print!("\r   \r");
+    });
+
+    let mut s = String::new();
+    try!(stdin().read_line(&mut s));
+    *is_done.lock().unwrap() = true;
+    handle.join().unwrap();
 
     Ok(())
 }
