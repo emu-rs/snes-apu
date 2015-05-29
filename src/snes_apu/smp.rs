@@ -1,6 +1,3 @@
-const RESET_VECTOR: u16 = 0xffc0;
-const RESET_REG_SP: u8 = 0xef;
-
 pub struct Smp {
     // TODO: emulator
     reg_pc: u16,
@@ -27,14 +24,14 @@ pub struct Smp {
 impl Smp {
     pub fn new() -> Smp {
         let mut ret = Smp {
-            reg_pc: RESET_VECTOR,
+            reg_pc: 0,
             reg_a: 0,
             reg_x: 0,
             reg_y: 0,
-            reg_sp: RESET_REG_SP,
+            reg_sp: 0,
 
             psw_c: false,
-            psw_z: true,
+            psw_z: false,
             psw_h: false,
             psw_p: false,
             psw_v: false,
@@ -49,11 +46,11 @@ impl Smp {
     }
 
     pub fn reset(&mut self) {
-        self.reg_pc = RESET_VECTOR;
+        self.reg_pc = 0xffc0;
         self.reg_a = 0;
         self.reg_x = 0;
         self.reg_y = 0;
-        self.reg_sp = RESET_REG_SP;
+        self.reg_sp = 0xef;
         self.set_psw(0x02);
     }
 
