@@ -5,7 +5,6 @@ use std::env;
 use std::io::{Result, Error, ErrorKind, Write, stdout, stdin};
 use std::thread;
 use std::sync::{Arc, Mutex};
-
 use snes_apu::spc::{Spc, Emulator};
 
 fn main() {
@@ -76,11 +75,7 @@ fn wait_for_key_press_with_busy_icon() -> Result<()> {
     let handle = thread::spawn(move || {
         let chars = ['-', '/', '|', '\\'];
         let mut char_index = 0;
-        loop {
-            if *(thread_is_done.lock().unwrap()) {
-                break;
-            }
-
+        while !*(thread_is_done.lock().unwrap()) {
             print!("\r[{}]", chars[char_index]);
             stdout().flush().unwrap();
             char_index = (char_index + 1) % chars.len();
