@@ -234,7 +234,7 @@ impl<'a> Smp<'a> {
         self.adc_op(x, !y)
     }
 
-    fn st_op(&mut self, _: u8, y: u8) -> u8 {
+    fn st_op(&self, _: u8, y: u8) -> u8 {
         y
     }
 
@@ -242,6 +242,28 @@ impl<'a> Smp<'a> {
         self.psw_c = false;
         let mut ret = self.adc_op(x as u8, y as u8) as u16;
         ret |= (self.adc_op((x >> 8) as u8, (y >> 8) as u8) as u16) << 8;
+        self.psw_z = ret == 0;
+        ret
+    }
+
+    fn cpw_op(&mut self, x: u16, y: u16) -> u16 {
+        let ret = (x as i32) - (y as i32);
+        self.psw_n = (ret & 0x8000) != 0;
+        self.psw_z = (ret as u16) == 0;
+        self.psw_c = ret >= 0;
+        ret as u16
+    }
+
+    fn ldw_op(&mut self, _: u16, y: u16) -> u16 {
+        self.psw_n = (y & 0x8000) != 0;
+        self.psw_z = y == 0;
+        y
+    }
+
+    fn sbw_op(&mut self, x: u16, y: u16) -> u16 {
+        self.psw_c = true;
+        let mut ret = self.sbc_op(x as u8, y as u8) as u16;
+        ret |= (self.sbc_op((x >> 8) as u8, (y >> 8) as u8) as u16) << 8;
         self.psw_z = ret == 0;
         ret
     }
