@@ -268,8 +268,28 @@ impl<'a> Smp<'a> {
         ret
     }
 
-    fn something(&self, x: i32) -> i32 {
-        x * 2
+    fn adjust_dpw_op(&mut self, x: u16) {
+        let mut addr = self.read_pc_op();
+        let mut result = (self.read_dp_op(addr) as u16) + x;
+        self.write_dp_op(addr, result as u8);
+        addr += 1;
+        let mut high = (result >> 8) as u8;
+        high += self.read_dp_op(addr);
+        result = ((high as u16) << 8) | (result & 0xff);
+        self.write_dp_op(addr, (result >> 8) as u8);
+        self.psw_n = (result & 0x8000) != 0;
+        self.psw_z = result == 0;
+    }
+
+    fn branch_op(&mut self, cond: bool) {
+        let offset = self.read_pc_op();
+        if !cond {
+            return;
+        }
+        self.cycles(2);
+        // TODO: Some of these casts might not be necessary; there's probably
+        // a better way to add a i8 to a u16 with proper signs.
+        self.reg_pc = ((self.reg_pc as i16) + ((offset as i8) as i16)) as u16;
     }
 
     fn run(&mut self, target_cycles: i32) -> i32 {
@@ -280,8 +300,34 @@ impl<'a> Smp<'a> {
             })
         }
 
-        let mut x = 0;
-        adjust_op!(something, x);
+        macro_rules! adjust_addr_op {
+            ($op:ident) => ({
+                let mut addr = self.read_pc_op() as u16;
+                addr |= (self.read_pc_op() as u16) << 8;
+                let mut result = self.read_op(addr);
+                result = self.$op(result);
+                self.write_op(addr, result);
+            })
+        }
+
+        macro_rules! adjust_dp_op {
+            ($op:ident) => ({
+                let addr = self.read_pc_op() as u16;
+                let mut result = self.read_dp_op(addr);
+                result = self.$op(result);
+                self.write_dp_op(addr, result);
+            })
+        }
+
+        macro_rules! adjust_dp_x_op {
+            ($op:ident) => ({
+                let addr = self.read_pc_op();
+                self.cycles(1);
+                let mut result = self.read_dp_op(addr + self.reg_x);
+                result = self.$op(result);
+                self.write_dp_op(addr + self.reg_x, result);
+            })
+        }
 
         0 // TODO
     }
