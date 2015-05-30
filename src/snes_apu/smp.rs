@@ -292,6 +292,30 @@ impl<'a> Smp<'a> {
         self.reg_pc = ((self.reg_pc as i16) + ((offset as i8) as i16)) as u16;
     }
 
+    fn branch_bit_op(&mut self, x: u8) {
+        let addr = self.read_pc_op();
+        let sp = self.read_dp_op(addr);
+        let y = self.read_pc_op();
+        self.cycles(1);
+        if ((sp & (1 << (x >> 5))) != 0) == ((x & 0x10) != 0) {
+            return;
+        }
+        self.cycles(2);
+        // TODO: Some of these casts might not be necessary; there's probably
+        // a better way to add a i8 to a u16 with proper signs.
+        self.reg_pc = ((self.reg_pc as i16) + ((y as i8) as i16)) as u16;
+    }
+
+    fn pull_op(&mut self, x: &mut u8) {
+        self.cycles(2);
+        *x = self.read_sp_op();
+    }
+
+    fn push_op(&mut self, x: u8) {
+        self.cycles(2);
+        self.write_sp_op(x);
+    }
+
     fn run(&mut self, target_cycles: i32) -> i32 {
         macro_rules! adjust_op {
             ($op:ident, $x:ident) => ({
