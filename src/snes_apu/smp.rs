@@ -353,6 +353,40 @@ impl<'a> Smp<'a> {
             })
         }
 
+        macro_rules! read_addr_op {
+            ($op:ident, $x:ident) => ({
+                let mut addr = self.read_pc_op() as u16;
+                addr |= (self.read_pc_op() as u16) << 8;
+                let y = self.read_op(addr);
+                $x = self.$op($x, y);
+            })
+        }
+
+        macro_rules! read_addr_i_op {
+            ($op:ident, $x:ident) => ({
+                let mut addr = self.read_pc_op() as u16;
+                addr |= (self.read_pc_op() as u16) << 8;
+                self.cycles(1);
+                let y = self.read_op(addr + $x);
+                self.reg_a = self.$op(self.reg_a, y);
+            })
+        }
+
+        macro_rules! read_const_op {
+            ($op:ident, $x:ident) => ({
+                let y = self.read_pc_op();
+                $x = self.$op($x, y);
+            })
+        }
+
+        macro_rules! read_dp_op {
+            ($op:ident, $x:ident) => ({
+                let addr = self.read_pc_op();
+                let y = self.read_dp_op();
+                $x = self.$op($x, y);
+            })
+        }
+
         0 // TODO
     }
 }
