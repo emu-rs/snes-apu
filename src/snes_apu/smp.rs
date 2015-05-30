@@ -316,6 +316,24 @@ impl<'a> Smp<'a> {
         self.write_sp_op(x);
     }
 
+    fn set_addr_bit_op(&mut self, opcode: u8) {
+        let mut x = self.read_pc_op() as u16;
+        x |= (self.read_pc_op() as u16) << 8;
+        let bit = x >> 13;
+        x &= 0x1fff;
+        let y = self.read_op(x) as u16;
+        match opcode >> 5 {
+            0 | 1 => { // orc addr:bit; orc !addr:bit
+                self.cycles(1);
+                self.psw_c |= ((y & (1 << bit)) != 0) ^ ((opcode & 0x20) != 0);
+            },
+            // TODO: Finish this
+            _ => {
+                unreachable!();
+            }
+        }
+    }
+
     fn run(&mut self, target_cycles: i32) -> i32 {
         macro_rules! adjust_op {
             ($op:ident, $x:ident) => ({
