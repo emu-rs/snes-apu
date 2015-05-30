@@ -382,8 +382,64 @@ impl<'a> Smp<'a> {
         macro_rules! read_dp_op {
             ($op:ident, $x:ident) => ({
                 let addr = self.read_pc_op();
-                let y = self.read_dp_op();
+                let y = self.read_dp_op(addr);
                 $x = self.$op($x, y);
+            })
+        }
+
+        macro_rules! read_dp_i_op {
+            ($op:ident, $x:ident, $y:ident) => ({
+                let addr = self.read_pc_op(addr + $y);
+                self.cycles(1);
+                let z = self.read_dp_op();
+                $x = self.$op($x, z);
+            })
+        }
+
+        macro_rules! read_dpw_op {
+            ($op:ident) => ({
+                let mut addr = self.read_pc_op();
+                let mut x = self.read_dp_op(addr) as u16;
+                addr += 1;
+                /* TODO:
+                if $op != cpw_op {
+                    self.cycles(1);
+                }
+                 */
+                x |= (self.read_dp_op(addr) as u16) << 8;
+                self.set_reg_ya(self.$op(self.get_reg_ya(), x));
+            })
+        }
+
+        macro_rules! read_i_dp_x_op {
+            ($op:ident) => ({
+                let mut addr = self.read_pc_op() + self.reg_x;
+                self.cycles(1);
+                let addr2 = self.read_dp_op(addr) as u16;
+                addr += 1;
+                addr2 |= (self.read_dp_op(addr) as u16) << 8;
+                let x = self.read_op(addr2);
+                self.reg_a = self.$op(reg_a, x);
+            })
+        }
+
+        macro_rules! read_i_dp_y_op {
+            ($op:ident) => ({
+                let mut addr = self.read_pc_op();
+                self.cycles(1);
+                let mut addr2 = self.read_dp_op(addr) as u16;
+                addr += 1;
+                addr2 |= (self.read_dp_op(addr) as u16) << 8;
+                let x = self.read_op(((addr as i16) + ((self.reg_x as i8) as i16)) as u16);
+                self.reg_a = self.$op(self.reg_a, x);
+            })
+        }
+
+        macro_rules! read_i_x_op {
+            ($op:ident) => ({
+                self.cycles(1);
+                let x = self.read_dp_op(self.reg_x);
+                self.reg_a = self.$op(self.reg_a, x);
             })
         }
 
