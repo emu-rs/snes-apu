@@ -268,7 +268,21 @@ impl<'a> Smp<'a> {
         ret
     }
 
+    fn something(&self, x: i32) -> i32 {
+        x * 2
+    }
+
     fn run(&mut self, target_cycles: i32) -> i32 {
+        macro_rules! adjust_op {
+            ($op:ident, $x:ident) => ({
+                self.cycles(1);
+                $x = self.$op($x);
+            })
+        }
+
+        let mut x = 0;
+        adjust_op!(something, x);
+
         0 // TODO
     }
 }
