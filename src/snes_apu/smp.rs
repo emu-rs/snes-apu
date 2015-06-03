@@ -289,7 +289,7 @@ impl<'a> Smp<'a> {
         self.cycles(2);
         // TODO: Some of these casts might not be necessary; there's probably
         // a better way to add a i8 to a u16 with proper signs.
-        self.reg_pc = ((self.reg_pc as i16) + ((offset as i8) as i16)) as u16;
+        self.reg_pc += ((offset as i8) as i16) as u16;
     }
 
     fn branch_bit_op(&mut self, x: u8) {
@@ -303,7 +303,7 @@ impl<'a> Smp<'a> {
         self.cycles(2);
         // TODO: Some of these casts might not be necessary; there's probably
         // a better way to add a i8 to a u16 with proper signs.
-        self.reg_pc = ((self.reg_pc as i16) + ((y as i8) as i16)) as u16;
+        self.reg_pc += ((y as i8) as i16) as u16;
     }
 
     fn pull_op(&mut self, x: &mut u8) {
@@ -395,6 +395,115 @@ impl<'a> Smp<'a> {
         self.cycles(1);
         self.read_dp_op(addr);
         self.write_dp_op(addr, x);
+    }
+
+    fn bne_dp_op(&mut self) {
+        let addr = self.read_pc_op();
+        let x = self.read_dp_op(addr);
+        let y = self.read_pc_op();
+        self.cycles(1);
+        if self.reg_a == x {
+            return;
+        }
+        self.cycles(2);
+        // TODO: Some of these casts might not be necessary; there's probably
+        // a better way to add a i8 to a u16 with proper signs.
+        self.reg_pc += ((y as i8) as i16) as u16;
+    }
+
+    fn bne_dp_dec_op(&mut self) {
+        let addr = self.read_pc_op();
+        let x = self.read_dp_op(addr) - 1;
+        self.write_dp_op(addr, x);
+        let y = self.read_pc_op();
+        if x == 0 {
+            return;
+        }
+        self.cycles(2);
+        // TODO: Some of these casts might not be necessary; there's probably
+        // a better way to add a i8 to a u16 with proper signs.
+        self.reg_pc += ((y as i8) as i16) as u16;
+    }
+
+    fn bne_dp_x_op(&mut self) {
+        let addr = self.read_pc_op();
+        self.cycles(1);
+        let reg_x = self.reg_x;
+        let x = self.read_dp_op(addr + reg_x);
+        let y = self.read_pc_op();
+        self.cycles(1);
+        if self.reg_a == x {
+            return;
+        }
+        self.cycles(2);
+        // TODO: Some of these casts might not be necessary; there's probably
+        // a better way to add a i8 to a u16 with proper signs.
+        self.reg_pc += ((y as i8) as i16) as u16;
+    }
+
+    fn bne_y_dec_op(&mut self) {
+        let x = self.read_pc_op();
+        self.cycles(2);
+        self.reg_y -= 1;
+        if self.reg_y == 0 {
+            return;
+        }
+        self.cycles(2);
+        // TODO: Some of these casts might not be necessary; there's probably
+        // a better way to add a i8 to a u16 with proper signs.
+        self.reg_pc += ((x as i8) as i16) as u16;
+    }
+
+    fn brk_op(&mut self) {
+        let mut addr = self.read_op(0xffde) as u16;
+        addr |= (self.read_op(0xffdf) as u16) << 8;
+        self.cycles(2);
+        let mut reg_pc = self.reg_pc;
+        self.write_sp_op((reg_pc >> 8) as u8);
+        reg_pc = self.reg_pc;
+        self.write_sp_op(reg_pc as u8);
+        let psw = self.get_psw();
+        self.write_sp_op(psw);
+        self.reg_pc = addr;
+        self.psw_b = true;
+        self.psw_i = false;
+    }
+
+    fn clv_op(&mut self) {
+        self.cycles(1);
+        self.psw_v = false;
+        self.psw_h = false;
+    }
+
+    fn cmc_op(&mut self) {
+        self.cycles(2);
+        self.psw_c = !self.psw_c;
+    }
+
+    fn daa_op(&mut self) {
+        self.cycles(2);
+        if self.psw_c || self.reg_a > 0x99 {
+            self.reg_a += 0x60;
+            self.psw_c = true;
+        }
+        if self.psw_h || (self.reg_a & 0x0f) > 0x09 {
+            self.reg_a += 0x06;
+        }
+        let reg_a = self.reg_a;
+        self.set_psw_n_z_op(reg_a as u32);
+    }
+
+    fn das_op(&mut self) {
+        self.cycles(2);
+        if !self.psw_c || self.reg_a > 0x99 {
+            self.reg_a -= 0x60;
+            self.psw_c = false;
+        }
+        if !self.psw_h || (self.reg_a & 0x0f) > 0x09 {
+            self.reg_a -= 0x06;
+        }
+        let reg_a = self.reg_a;
+        self.set_psw_n_z_op(reg_a as u32);
     }
 
     fn run(&mut self, target_cycles: i32) -> i32 {
