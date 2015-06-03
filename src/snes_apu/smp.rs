@@ -664,6 +664,31 @@ impl<'a> Smp<'a> {
         self.write_dp_op(reg_x, reg_a);
     }
 
+    fn stw_dp_op(&mut self) {
+        let mut addr = self.read_pc_op();
+        self.read_dp_op(addr);
+        let reg_a = self.reg_a;
+        self.write_dp_op(addr, reg_a);
+        addr += 1;
+        let reg_y = self.reg_y;
+        self.write_dp_op(addr, reg_y);
+    }
+
+    fn wait_op(&mut self) {
+        // TODO
+        panic!("wait occurred");
+        loop {
+            self.cycles(2);
+        }
+    }
+
+    fn xcn_op(&mut self) {
+        self.cycles(4);
+        self.reg_a = (self.reg_a >> 4) | (self.reg_a << 4);
+        let reg_a = self.reg_a;
+        self.set_psw_n_z_op(reg_a as u32);
+    }
+
     fn run(&mut self, target_cycles: i32) -> i32 {
         macro_rules! adjust_op {
             ($op:ident, $x:ident) => ({
