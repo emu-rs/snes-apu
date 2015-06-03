@@ -367,6 +367,36 @@ impl<'a> Smp<'a> {
         self.write_op(addr, if x { y | reg_a } else { y & !reg_a });
     }
 
+    fn write_addr_op(&mut self, x: u8) {
+        let mut addr = self.read_pc_op() as u16;
+        addr |= (self.read_pc_op() as u16) << 8;
+        self.read_op(addr);
+        self.write_op(addr, x);
+    }
+
+    fn write_addr_i_op(&mut self, x: u8) {
+        let mut addr = self.read_pc_op() as u16;
+        addr |= (self.read_pc_op() as u16) << 8;
+        self.cycles(1);
+        addr += x as u16;
+        self.read_op(addr);
+        let reg_a = self.reg_a;
+        self.write_op(addr, reg_a);
+    }
+
+    fn write_dp_imm_op(&mut self, x: u8) {
+        let addr = self.read_pc_op();
+        self.read_dp_op(addr);
+        self.write_dp_op(addr, x);
+    }
+
+    fn write_dp_i_op(&mut self, x: u8, y: u8) {
+        let addr = self.read_pc_op() + y;
+        self.cycles(1);
+        self.read_dp_op(addr);
+        self.write_dp_op(addr, x);
+    }
+
     fn run(&mut self, target_cycles: i32) -> i32 {
         macro_rules! adjust_op {
             ($op:ident, $x:ident) => ({
@@ -508,6 +538,49 @@ impl<'a> Smp<'a> {
                 $y = $x;
                 if !$is_target_reg_sp {
                     self.set_psw_n_z_op($y as u32);
+                }
+            })
+        }
+
+        macro_rules! write_dp_const_op {
+            ($op:ident, $is_op_cmp:expr) => ({
+                let x = self.read_pc_op();
+                let addr = self.read_pc_op();
+                let mut y = self.read_dp_op(addr);
+                y = self.$op(y, x);
+                if !$is_op_cmp {
+                    self.write_dp_op(addr, y);
+                } else {
+                    self.cycles(1);
+                }
+            })
+        }
+
+        macro_rules! write_dp_dp_op {
+            ($op:ident, $is_op_cmp:expr, $is_op_st:expr) => ({
+                let addr = self.read_pc_op():
+                let x = self.read_dp_op(addr);
+                let y = self.read_pc_op();
+                let mut z = if !$is_op_st { self.read_dp_op(y) } else { 0 };
+                z = self.$op(z, x);
+                if !$is_op_cmp {
+                    self.write_dp_op(y, z);
+                } else {
+                    self.cycles(1);
+                }
+            })
+        }
+
+        macro_rules! write_ix_iy_op {
+            ($op:ident, $is_op_cmp:expr) => ({
+                self.cycles(1);
+                let x = self.read_dp_op(self.reg_y);
+                let mut y = self.read_dp_op(self.reg_x);
+                y = self.$op(y, x);
+                if !$is_op_cmp {
+                    self.write_dp_op(self.reg_x, y);
+                } else {
+                    self.cycles(1);
                 }
             })
         }
