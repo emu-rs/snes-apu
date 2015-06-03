@@ -582,8 +582,8 @@ impl<'a> Smp<'a> {
     fn lda_i_x_inc_op(&mut self) {
         self.cycles(1);
         let reg_x = self.reg_x;
-        self.reg_a = self.read_dp_op(reg_x);
         self.reg_x += 1;
+        self.reg_a = self.read_dp_op(reg_x);
         self.cycles(1);
         let reg_a = self.reg_a;
         self.set_psw_n_z_op(reg_a as u32);
@@ -606,6 +606,62 @@ impl<'a> Smp<'a> {
         self.cycles(2);
         let psw = self.read_sp_op();
         self.set_psw(psw);
+    }
+
+    fn rti_op(&mut self) {
+        let psw = self.read_sp_op();
+        self.set_psw(psw);
+        let mut addr = self.read_sp_op() as u16;
+        addr |= (self.read_sp_op() as u16) << 8;
+        self.cycles(2);
+        self.reg_pc = addr;
+    }
+
+    fn rts_op(&mut self) {
+        let mut addr = self.read_sp_op() as u16;
+        addr |= (self.read_sp_op() as u16) << 8;
+        self.cycles(2);
+        self.reg_pc = addr;
+    }
+
+    fn sta_i_dp_x_op(&mut self) {
+        let mut addr = self.read_pc_op() + self.reg_x;
+        self.cycles(1);
+        let mut addr2 = self.read_dp_op(addr) as u16;
+        addr += 1;
+        addr2 |= (self.read_dp_op(addr) as u16) << 8;
+        self.read_op(addr2);
+        let reg_a = self.reg_a;
+        self.write_op(addr2, reg_a);
+    }
+
+    fn sta_i_dp_y_op(&mut self) {
+        let mut addr = self.read_pc_op();
+        let mut addr2 = self.read_dp_op(addr) as u16;
+        addr += 1;
+        addr2 |= (self.read_dp_op(addr) as u16) << 8;
+        self.cycles(1);
+        addr2 += self.reg_y as u16;
+        self.read_op(addr2);
+        let reg_a = self.reg_a;
+        self.write_op(addr2, reg_a);
+    }
+
+    fn sta_i_x_op(&mut self) {
+        self.cycles(1);
+        let mut reg_x = self.reg_x;
+        self.read_dp_op(reg_x);
+        reg_x = self.reg_x;
+        let reg_a = self.reg_a;
+        self.write_dp_op(reg_x, reg_a);
+    }
+
+    fn sta_i_x_inc_op(&mut self) {
+        self.cycles(2);
+        let reg_x = self.reg_x;
+        self.reg_x += 1;
+        let reg_a = self.reg_a;
+        self.write_dp_op(reg_x, reg_a);
     }
 
     fn run(&mut self, target_cycles: i32) -> i32 {
