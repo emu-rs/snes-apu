@@ -350,6 +350,15 @@ impl<'a> Smp<'a> {
         }
     }
 
+    fn set_bit_op(&mut self, opcode: u8) {
+        let addr = self.read_pc_op();
+        // TODO: The original code uses both ~ and ! operators in these expressions.
+        // Double check the operation of these operators in Rust vs C++ and update
+        // this opcode accordingly.
+        let x = self.read_dp_op(addr) & !(1 << (opcode >> 5));
+        self.write_dp_op(addr, x | (!(opcode & 0x10) << (opcode >> 5)));
+    }
+
     fn run(&mut self, target_cycles: i32) -> i32 {
         macro_rules! adjust_op {
             ($op:ident, $x:ident) => ({
