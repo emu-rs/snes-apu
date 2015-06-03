@@ -598,7 +598,7 @@ impl<'a> Smp<'a> {
         self.set_psw_n_z_op(reg_y as u32);
     }
 
-    fn nop(&mut self) {
+    fn nop_op(&mut self) {
         self.cycles(1);
     }
 
@@ -709,7 +709,7 @@ impl<'a> Smp<'a> {
 
         macro_rules! adjust_dp_op {
             ($op:ident) => ({
-                let addr = self.read_pc_op() as u16;
+                let addr = self.read_pc_op();
                 let mut result = self.read_dp_op(addr);
                 result = self.$op(result);
                 self.write_dp_op(addr, result);
@@ -727,11 +727,12 @@ impl<'a> Smp<'a> {
         }
 
         macro_rules! read_addr_op {
-            ($op:ident, $x:ident) => ({
+            ($op:ident, $x:expr) => ({
                 let mut addr = self.read_pc_op() as u16;
                 addr |= (self.read_pc_op() as u16) << 8;
                 let y = self.read_op(addr);
-                $x = self.$op($x, y);
+                let temp = $x;
+                $x = self.$op(temp, y);
             })
         }
 
@@ -746,22 +747,24 @@ impl<'a> Smp<'a> {
         }
 
         macro_rules! read_const_op {
-            ($op:ident, $x:ident) => ({
+            ($op:ident, $x:expr) => ({
                 let y = self.read_pc_op();
-                $x = self.$op($x, y);
+                let temp = $x;
+                $x = self.$op(temp, y);
             })
         }
 
         macro_rules! read_dp_op {
-            ($op:ident, $x:ident) => ({
+            ($op:ident, $x:expr) => ({
                 let addr = self.read_pc_op();
                 let y = self.read_dp_op(addr);
-                $x = self.$op($x, y);
+                let temp = $x;
+                $x = self.$op(temp, y);
             })
         }
 
         macro_rules! read_dp_i_op {
-            ($op:ident, $x:ident, $y:ident) => ({
+            ($op:ident, $x:expr, $y:ident) => ({
                 let addr = self.read_pc_op(addr + $y);
                 self.cycles(1);
                 let z = self.read_dp_op();
@@ -786,10 +789,11 @@ impl<'a> Smp<'a> {
             ($op:ident) => ({
                 let mut addr = self.read_pc_op() + self.reg_x;
                 self.cycles(1);
-                let addr2 = self.read_dp_op(addr) as u16;
+                let mut addr2 = self.read_dp_op(addr) as u16;
                 addr += 1;
                 addr2 |= (self.read_dp_op(addr) as u16) << 8;
                 let x = self.read_op(addr2);
+                let reg_a = self.reg_a;
                 self.reg_a = self.$op(reg_a, x);
             })
         }
@@ -809,8 +813,10 @@ impl<'a> Smp<'a> {
         macro_rules! read_i_x_op {
             ($op:ident) => ({
                 self.cycles(1);
-                let x = self.read_dp_op(self.reg_x);
-                self.reg_a = self.$op(self.reg_a, x);
+                let reg_x = self.reg_x;
+                let x = self.read_dp_op(reg_x);
+                let reg_a = self.reg_a;
+                self.reg_a = self.$op(reg_a, x);
             })
         }
 
@@ -850,7 +856,7 @@ impl<'a> Smp<'a> {
 
         macro_rules! write_dp_dp_op {
             ($op:ident, $is_op_cmp:expr, $is_op_st:expr) => ({
-                let addr = self.read_pc_op():
+                let addr = self.read_pc_op();
                 let x = self.read_dp_op(addr);
                 let y = self.read_pc_op();
                 let mut z = if !$is_op_st { self.read_dp_op(y) } else { 0 };
@@ -877,6 +883,30 @@ impl<'a> Smp<'a> {
             })
         }
 
-        0 // TODO
+        self.cycle_count = 0;
+        while self.cycle_count < target_cycles {
+            let opcode = self.read_pc_op();
+            match opcode {
+                0x00 => self.nop_op(),
+                0x01 => self.jst_op(opcode),
+                0x02 => self.set_bit_op(opcode),
+                0x03 => self.branch_bit_op(opcode),
+                0x04 => read_dp_op!(or_op, self.reg_a),
+                0x05 => read_addr_op!(or_op, self.reg_a),
+                0x06 => read_i_x_op!(or_op),
+                0x07 => read_i_dp_x_op!(or_op),
+                0x08 => read_const_op!(or_op, self.reg_a),
+                0x09 => write_dp_dp_op!(or_op, false, false),
+                0x0a => self.set_addr_bit_op(opcode),
+                0x0b => adjust_dp_op!(asl_op),
+                0x0c => adjust_addr_op!(asl_op),
+                0x0d => { let psw = self.get_psw(); self.push_op(psw); },
+                0x0e => self.test_addr_op(true),
+                0x0f => self.brk_op(),
+                _ => panic!("Invalid opcode")
+            }
+        }
+
+        self.cycle_count
     }
 }
