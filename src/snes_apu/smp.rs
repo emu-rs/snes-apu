@@ -359,6 +359,17 @@ impl<'a> Smp<'a> {
         self.write_dp_op(addr, x | (!(opcode & 0x10) << (opcode >> 5)));
     }
 
+    fn test_addr_op(&mut self, x: bool) {
+        let mut addr = self.read_pc_op() as u16;
+        addr |= (self.read_pc_op() as u16) << 8;
+        let y = self.read_op(addr);
+        let mut reg_a = self.reg_a;
+        self.set_psw_n_z_op((reg_a - y) as u32);
+        self.read_op(addr);
+        reg_a = self.reg_a;
+        self.write_op(addr, if x { y | reg_a } else { y & !reg_a });
+    }
+
     fn run(&mut self, target_cycles: i32) -> i32 {
         macro_rules! adjust_op {
             ($op:ident, $x:ident) => ({
@@ -491,6 +502,16 @@ impl<'a> Smp<'a> {
                     self.cycles(1);
                 }
                 $x = $y;
+            })
+        }
+
+        macro_rules! transfer_op {
+            ($x:expr, $y:ident, $is_target_reg_sp:expr) => ({
+                self.cycles(1);
+                $y = $x;
+                if !$is_target_reg_sp {
+                    self.set_psw_n_z_op($y as u32);
+                }
             })
         }
 
