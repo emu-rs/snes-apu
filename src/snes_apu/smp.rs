@@ -1,7 +1,12 @@
 // TODO: This will panic on certain opcodes. The ideas I have for cpu_lang
 // will probably fix it; we'll see. For now tho, I'm gonna leave it as-is;
 // I can imagine fixing it trivially might lead to performance problems.
-// I'll deal with it after the port is finished.
+// Another issue I foresee is many of the opcodes assume the host architecture
+// is little-endian, which won't always be the case. I'm not yet sure how
+// to handle that yet.
+// Finally there's a lot of duplication, particularly when opcodes are
+// reading/writing 16-bit values. This can be greatly improved.
+// I'll deal with these problems after the port is finished.
 
 // TODO: This is a placeholder before I start generalizing traits
 // from the old code.
@@ -504,6 +509,103 @@ impl<'a> Smp<'a> {
         }
         let reg_a = self.reg_a;
         self.set_psw_n_z_op(reg_a as u32);
+    }
+
+    fn div_ya_op(&mut self) {
+        self.cycles(11);
+        let ya = self.get_reg_ya();
+        self.psw_v = self.reg_y >= self.reg_x;
+        self.psw_h = (self.reg_y & 0x0f) >= (self.reg_x & 0x0f);
+        let reg_x = self.reg_x as u16;
+        if (self.reg_y as u16) < (reg_x << 1) {
+            self.reg_a = (ya / reg_x) as u8;
+            self.reg_y = (ya % reg_x) as u8;
+        } else {
+            self.reg_a = (255 - (ya - (reg_x << 9)) / (256 - reg_x)) as u8;
+            self.reg_y = (reg_x + (ya - (reg_x << 9)) % (256 - reg_x)) as u8;
+        }
+        let reg_a = self.reg_a;
+        self.set_psw_n_z_op(reg_a as u32);
+    }
+
+    fn jmp_addr_op(&mut self) {
+        let mut addr = self.read_pc_op() as u16;
+        addr |= (self.read_pc_op() as u16) << 8;
+        self.reg_pc = addr;
+    }
+
+    fn jmp_i_addr_op(&mut self) {
+        let mut addr = self.read_pc_op() as u16;
+        addr |= (self.read_pc_op() as u16) << 8;
+        self.cycles(1);
+        addr += self.reg_x as u16;
+        let mut addr2 = self.read_op(addr) as u16;
+        addr += 1;
+        addr2 |= (self.read_op(addr) as u16) << 8;
+        self.reg_pc = addr2;
+    }
+
+    fn jsp_dp_op(&mut self) {
+        let addr = self.read_pc_op();
+        self.cycles(2);
+        let mut reg_pc = self.reg_pc;
+        self.write_sp_op((reg_pc >> 8) as u8);
+        reg_pc = self.reg_pc;
+        self.write_sp_op(reg_pc as u8);
+        self.reg_pc = 0xff00 | (addr as u16);
+    }
+
+    fn jsr_addr_op(&mut self) {
+        let mut addr = self.read_pc_op() as u16;
+        addr |= (self.read_pc_op() as u16) << 8;
+        self.cycles(3);
+        let mut reg_pc = self.reg_pc;
+        self.write_sp_op((reg_pc >> 8) as u8);
+        reg_pc = self.reg_pc;
+        self.write_sp_op(reg_pc as u8);
+        self.reg_pc = addr;
+    }
+
+    fn jst_op(&mut self, opcode: u8) {
+        let mut addr = 0xffde - (((opcode as u16) >> 4) << 1);
+        let mut addr2 = self.read_op(addr) as u16;
+        addr += 1;
+        addr2 |= (self.read_op(addr) as u16) << 8;
+        self.cycles(3);
+        let mut reg_pc = self.reg_pc;
+        self.write_sp_op((reg_pc >> 8) as u8);
+        reg_pc = self.reg_pc;
+        self.write_sp_op(reg_pc as u8);
+        self.reg_pc = addr2;
+    }
+
+    fn lda_i_x_inc_op(&mut self) {
+        self.cycles(1);
+        let reg_x = self.reg_x;
+        self.reg_a = self.read_dp_op(reg_x);
+        self.reg_x += 1;
+        self.cycles(1);
+        let reg_a = self.reg_a;
+        self.set_psw_n_z_op(reg_a as u32);
+    }
+
+    fn mul_ya_op(&mut self) {
+        self.cycles(8);
+        let ya = (self.reg_y as u16) * (self.reg_a as u16);
+        self.reg_a = ya as u8;
+        self.reg_y = (ya >> 8) as u8;
+        let reg_y = self.reg_y;
+        self.set_psw_n_z_op(reg_y as u32);
+    }
+
+    fn nop(&mut self) {
+        self.cycles(1);
+    }
+
+    fn plp_op(&mut self) {
+        self.cycles(2);
+        let psw = self.read_sp_op();
+        self.set_psw(psw);
     }
 
     fn run(&mut self, target_cycles: i32) -> i32 {
