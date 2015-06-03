@@ -440,15 +440,13 @@ impl<'a> Smp<'a> {
         }
 
         macro_rules! read_dpw_op {
-            ($op:ident) => ({
+            ($op:ident, $is_cpw_op:expr) => ({
                 let mut addr = self.read_pc_op();
                 let mut x = self.read_dp_op(addr) as u16;
                 addr += 1;
-                /* TODO:
-                if $op != cpw_op {
+                if is_cpw_op {
                     self.cycles(1);
                 }
-                 */
                 x |= (self.read_dp_op(addr) as u16) << 8;
                 self.set_reg_ya(self.$op(self.get_reg_ya(), x));
             })
