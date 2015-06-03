@@ -484,6 +484,16 @@ impl<'a> Smp<'a> {
             })
         }
 
+        macro_rules! set_flag_op {
+            ($x:ident, $y:expr, $is_target_psw_i:expr) => ({
+                self.cycles(1);
+                if $is_target_psw_i {
+                    self.cycles(1);
+                }
+                $x = $y;
+            })
+        }
+
         0 // TODO
     }
 }
