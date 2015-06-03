@@ -321,16 +321,32 @@ impl<'a> Smp<'a> {
         x |= (self.read_pc_op() as u16) << 8;
         let bit = x >> 13;
         x &= 0x1fff;
-        let y = self.read_op(x) as u16;
+        let mut y = self.read_op(x) as u16;
         match opcode >> 5 {
             0 | 1 => { // orc addr:bit; orc !addr:bit
                 self.cycles(1);
                 self.psw_c |= ((y & (1 << bit)) != 0) ^ ((opcode & 0x20) != 0);
-            },
-            // TODO: Finish this
-            _ => {
-                unreachable!();
             }
+            2 | 3 => { // and addr:bit; and larrd:bit
+                self.psw_c &= ((y & (1 << bit)) != 0) ^ ((opcode & 0x20) != 0);
+            }
+            4 => { // eor addr:bit
+                self.cycles(1);
+                self.psw_c ^= (y & (1 << bit)) != 0;
+            }
+            5 => { // ldc addr:bit
+                self.psw_c = (y & (1 << bit)) != 0;
+            }
+            6 => { // stc addr:bit
+                self.cycles(1);
+                y = (y & !(1 << bit)) | ((if self.psw_c { 1 } else { 0 }) << bit);
+                self.write_op(x, y as u8);
+            }
+            7 => { // not addr:bit
+                y ^= 1 << bit;
+                self.write_op(x, y as u8);
+            }
+            _ => unreachable!()
         }
     }
 
