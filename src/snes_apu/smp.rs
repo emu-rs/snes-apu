@@ -915,6 +915,7 @@ impl<'a> Smp<'a> {
                 0x0d => { let psw = self.get_psw(); self.push_op(psw); },
                 0x0e => self.test_addr_op(true),
                 0x0f => self.brk_op(),
+
                 0x10 => { let psw_n = self.psw_n; self.branch_op(!psw_n); },
                 0x11 => self.jst_op(opcode),
                 0x12 => self.set_bit_op(opcode),
@@ -931,7 +932,41 @@ impl<'a> Smp<'a> {
                 0x1d => adjust_op!(dec_op, self.reg_x),
                 0x1e => read_addr_op!(cmp_op, self.reg_x),
                 0x1f => self.jmp_i_addr_x_op(),
-                // TODO
+
+                0x20 => set_flag_op!(self.psw_p, false, false),
+                0x21 => self.jst_op(opcode),
+                0x22 => self.set_bit_op(opcode),
+                0x23 => self.branch_bit_op(opcode),
+                0x24 => read_dp_op!(and_op, self.reg_a),
+                0x25 => read_addr_op!(and_op, self.reg_a),
+                0x26 => read_i_x_op!(and_op),
+                0x27 => read_i_dp_x_op!(and_op),
+                0x28 => read_const_op!(and_op, self.reg_a),
+                0x29 => write_dp_dp_op!(and_op, false, false),
+                0x2a => self.set_addr_bit_op(opcode),
+                0x2b => adjust_dp_op!(rol_op),
+                0x2c => adjust_addr_op!(rol_op),
+                0x2d => { let reg_a = self.reg_a; self.push_op(reg_a); },
+                0x2e => self.bne_dp_op(),
+                0x2f => self.branch_op(true),
+
+                0x30 => { let psw_n = self.psw_n; self.branch_op(psw_n); },
+                0x31 => self.jst_op(opcode),
+                0x32 => self.set_bit_op(opcode),
+                0x33 => self.branch_bit_op(opcode),
+                0x34 => read_dp_i_op!(and_op, self.reg_a, self.reg_x),
+                0x35 => read_addr_i_op!(and_op, self.reg_x),
+                0x36 => read_addr_i_op!(and_op, self.reg_y),
+                0x37 => read_i_dp_y_op!(and_op),
+                0x38 => write_dp_const_op!(and_op, false),
+                0x39 => write_i_x_i_y_op!(and_op, false),
+                0x3a => self.adjust_dpw_op(1),
+                0x3b => adjust_dp_x_op!(rol_op),
+                0x3c => adjust_op!(rol_op, self.reg_a),
+                0x3d => adjust_op!(inc_op, self.reg_x),
+                0x3e => read_dp_op!(cmp_op, self.reg_x),
+                0x3f => self.jsr_addr_op(),
+
                 _ => panic!("Invalid opcode")
             }
         }
