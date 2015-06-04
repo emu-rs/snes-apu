@@ -1,4 +1,5 @@
 use super::spc::Spc;
+use super::smp::Smp;
 use super::timer::Timer;
 use super::ring_buffer::RingBuffer;
 
@@ -22,6 +23,8 @@ pub struct Apu {
     ram: [u8; RAM_LEN],
     ipl_rom: [u8; IPL_ROM_LEN],
 
+    smp: Smp,
+
     timers: [Timer; 3],
 
     left_output_buffer: [i16; BUFFER_LEN],
@@ -37,6 +40,8 @@ impl Apu {
         let mut ret = Apu {
             ram: [0; RAM_LEN],
             ipl_rom: [0; IPL_ROM_LEN],
+
+            smp: Smp::new(/* TODO: Find some way to get ret in here, or rethink the architecture a bit */),
 
             timers: [Timer::new(256), Timer::new(256), Timer::new(32)],
 
@@ -65,6 +70,11 @@ impl Apu {
 
         self.is_ipl_rom_enabled = true;
         self.dsp_reg_address = 0;
+    }
+
+    pub fn render(&mut self, /* TODO: Buffers */ num_samples: i32) {
+        // TODO: Proper impl
+        self.smp.run(num_samples * 64);
     }
 
     pub fn cpu_cycles_callback(&mut self, num_cycles: i32) {
