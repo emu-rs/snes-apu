@@ -367,36 +367,6 @@ impl<'a> Smp<'a> {
         self.write_op(addr, if x { y | reg_a } else { y & !reg_a });
     }
 
-    fn write_addr_op(&mut self, x: &u8) {
-        let mut addr = self.read_pc_op() as u16;
-        addr |= (self.read_pc_op() as u16) << 8;
-        self.read_op(addr);
-        self.write_op(addr, *x);
-    }
-
-    fn write_addr_i_op(&mut self, x: &u8) {
-        let mut addr = self.read_pc_op() as u16;
-        addr |= (self.read_pc_op() as u16) << 8;
-        self.cycles(1);
-        addr += *x as u16;
-        self.read_op(addr);
-        let reg_a = self.reg_a;
-        self.write_op(addr, reg_a);
-    }
-
-    fn write_dp_imm_op(&mut self, x: &u8) {
-        let addr = self.read_pc_op();
-        self.read_dp_op(addr);
-        self.write_dp_op(addr, *x);
-    }
-
-    fn write_dp_i_op(&mut self, x: &u8, y: &u8) {
-        let addr = self.read_pc_op() + *y;
-        self.cycles(1);
-        self.read_dp_op(addr);
-        self.write_dp_op(addr, *x);
-    }
-
     fn bne_dp_op(&mut self) {
         let addr = self.read_pc_op();
         let x = self.read_dp_op(addr);
@@ -900,6 +870,47 @@ impl<'a> Smp<'a> {
             })
         }
 
+        macro_rules! write_dp_imm_op {
+            ($x:expr) => ({
+                let addr = self.read_pc_op();
+                self.read_dp_op(addr);
+                let temp = $x;
+                self.write_dp_op(addr, temp);
+            })
+        }
+
+        macro_rules! write_dp_i_op {
+            ($x:expr, $y:expr) => ({
+                let addr = self.read_pc_op() + $y;
+                self.cycles(1);
+                self.read_dp_op(addr);
+                let temp = $x;
+                self.write_dp_op(addr, temp);
+            })
+        }
+
+        macro_rules! write_addr_op {
+            ($x:expr) => ({
+                let mut addr = self.read_pc_op() as u16;
+                addr |= (self.read_pc_op() as u16) << 8;
+                self.read_op(addr);
+                let temp = $x;
+                self.write_op(addr, temp);
+            })
+        }
+
+        macro_rules! write_addr_i_op {
+            ($x:expr) => ({
+                let mut addr = self.read_pc_op() as u16;
+                addr |= (self.read_pc_op() as u16) << 8;
+                self.cycles(1);
+                addr += $x as u16;
+                self.read_op(addr);
+                let reg_a = self.reg_a;
+                self.write_op(addr, reg_a);
+            })
+        }
+
         self.cycle_count = 0;
         while self.cycle_count < target_cycles {
             let opcode = self.read_pc_op();
@@ -1107,6 +1118,74 @@ impl<'a> Smp<'a> {
                 0xbd => transfer_op!(self.reg_x, self.reg_sp, true),
                 0xbe => self.das_op(),
                 0xbf => self.lda_i_x_inc_op(),
+
+                0xc0 => set_flag_op!(self.psw_i, false, true),
+                0xc1 => self.jst_op(opcode),
+                0xc2 => self.set_bit_op(opcode),
+                0xc3 => self.branch_bit_op(opcode),
+                0xc4 => write_dp_imm_op!(self.reg_a),
+                0xc5 => write_addr_op!(self.reg_a),
+                0xc6 => self.sta_i_x_op(),
+                0xc7 => self.sta_i_dp_x_op(),
+                0xc8 => read_const_op!(cmp_op, self.reg_x),
+                0xc9 => write_addr_op!(self.reg_x),
+                0xca => self.set_addr_bit_op(opcode),
+                0xcb => write_dp_imm_op!(self.reg_y),
+                0xcc => write_addr_op!(self.reg_y),
+                0xcd => read_const_op!(ld_op, self.reg_x),
+                0xce => pull_op!(self.reg_x),
+                0xcf => self.mul_ya_op(),
+
+                0xd0 => { let psw_z = self.psw_z; self.branch_op(!psw_z); },
+                0xd1 => self.jst_op(opcode),
+                0xd2 => self.set_bit_op(opcode),
+                0xd3 => self.branch_bit_op(opcode),
+                0xd4 => write_dp_i_op!(self.reg_a, self.reg_x),
+                0xd5 => write_addr_i_op!(self.reg_x),
+                0xd6 => write_addr_i_op!(self.reg_y),
+                0xd7 => self.sta_i_dp_y_op(),
+                0xd8 => write_dp_imm_op!(self.reg_x),
+                0xd9 => write_dp_i_op!(self.reg_x, self.reg_y),
+                0xda => self.stw_dp_op(),
+                0xdb => write_dp_i_op!(self.reg_y, self.reg_x),
+                0xdc => adjust_op!(dec_op, self.reg_y),
+                0xdd => transfer_op!(self.reg_y, self.reg_a, false),
+                0xde => self.bne_dp_x_op(),
+                0xdf => self.daa_op(),
+
+                0xe0 => self.clv_op(),
+                0xe1 => self.jst_op(opcode),
+                0xe2 => self.set_bit_op(opcode),
+                0xe3 => self.branch_bit_op(opcode),
+                0xe4 => read_dp_op!(ld_op, self.reg_a),
+                0xe5 => read_addr_op!(ld_op, self.reg_a),
+                0xe6 => read_i_x_op!(ld_op),
+                0xe7 => read_i_dp_x_op!(ld_op),
+                0xe8 => read_const_op!(ld_op, self.reg_x),
+                0xe9 => read_addr_op!(ld_op, self.reg_x),
+                0xea => self.set_addr_bit_op(opcode),
+                0xeb => read_dp_op!(ld_op, self.reg_y),
+                0xec => read_addr_op!(ld_op, self.reg_y),
+                0xed => self.cmc_op(),
+                0xee => pull_op!(self.reg_y),
+                0xef => self.wait_op(),
+
+                0xf0 => { let psw_z = self.psw_z; self.branch_op(psw_z); },
+                0xf1 => self.jst_op(opcode),
+                0xf2 => self.set_bit_op(opcode),
+                0xf3 => self.branch_bit_op(opcode),
+                0xf4 => read_dp_i_op!(ld_op, self.reg_a, self.reg_x),
+                0xf5 => read_addr_i_op!(ld_op, self.reg_x),
+                0xf6 => read_addr_i_op!(ld_op, self.reg_y),
+                0xf7 => read_i_dp_y_op!(ld_op),
+                0xf8 => read_dp_op!(ld_op, self.reg_x),
+                0xf9 => read_dp_i_op!(ld_op, self.reg_x, self.reg_y),
+                0xfa => write_dp_dp_op!(st_op, false, true),
+                0xfb => read_dp_i_op!(ld_op, self.reg_y, self.reg_x),
+                0xfc => adjust_op!(inc_op, self.reg_y),
+                0xfd => transfer_op!(self.reg_a, self.reg_y, false),
+                0xfe => self.bne_y_dec_op(),
+                0xff => self.wait_op(),
 
                 _ => panic!("Invalid opcode")
             }
