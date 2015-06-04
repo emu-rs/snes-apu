@@ -372,34 +372,34 @@ impl<'a> Smp<'a> {
         self.write_op(addr, if x { y | reg_a } else { y & !reg_a });
     }
 
-    fn write_addr_op(&mut self, x: u8) {
+    fn write_addr_op(&mut self, x: &u8) {
         let mut addr = self.read_pc_op() as u16;
         addr |= (self.read_pc_op() as u16) << 8;
         self.read_op(addr);
-        self.write_op(addr, x);
+        self.write_op(addr, *x);
     }
 
-    fn write_addr_i_op(&mut self, x: u8) {
+    fn write_addr_i_op(&mut self, x: &u8) {
         let mut addr = self.read_pc_op() as u16;
         addr |= (self.read_pc_op() as u16) << 8;
         self.cycles(1);
-        addr += x as u16;
+        addr += *x as u16;
         self.read_op(addr);
         let reg_a = self.reg_a;
         self.write_op(addr, reg_a);
     }
 
-    fn write_dp_imm_op(&mut self, x: u8) {
+    fn write_dp_imm_op(&mut self, x: &u8) {
         let addr = self.read_pc_op();
         self.read_dp_op(addr);
-        self.write_dp_op(addr, x);
+        self.write_dp_op(addr, *x);
     }
 
-    fn write_dp_i_op(&mut self, x: u8, y: u8) {
-        let addr = self.read_pc_op() + y;
+    fn write_dp_i_op(&mut self, x: &u8, y: &u8) {
+        let addr = self.read_pc_op() + *y;
         self.cycles(1);
         self.read_dp_op(addr);
-        self.write_dp_op(addr, x);
+        self.write_dp_op(addr, *x);
     }
 
     fn bne_dp_op(&mut self) {
@@ -830,7 +830,7 @@ impl<'a> Smp<'a> {
         }
 
         macro_rules! set_flag_op {
-            ($x:ident, $y:expr, $is_target_psw_i:expr) => ({
+            ($x:expr, $y:expr, $is_target_psw_i:expr) => ({
                 self.cycles(1);
                 if $is_target_psw_i {
                     self.cycles(1);
@@ -840,7 +840,7 @@ impl<'a> Smp<'a> {
         }
 
         macro_rules! transfer_op {
-            ($x:expr, $y:ident, $is_target_reg_sp:expr) => ({
+            ($x:expr, $y:expr, $is_target_reg_sp:expr) => ({
                 self.cycles(1);
                 $y = $x;
                 if !$is_target_reg_sp {
