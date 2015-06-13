@@ -1,3 +1,5 @@
 Cargo.lock
 target/
-test/
+/test/SPCFormat.txt
+/test/ct/
+/test/rd/
