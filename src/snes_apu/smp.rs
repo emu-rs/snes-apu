@@ -8,12 +8,14 @@
 // reading/writing 16-bit values. This can be greatly improved.
 // I'll deal with these problems after the port is finished.
 
+use std::sync::Arc;
+
 // TODO: This is a placeholder before I start generalizing traits
 // from the old code.
 use super::apu::Apu;
 
-pub struct Smp<'a> {
-    emulator: &'a mut Apu,
+pub struct Smp {
+    emulator: *mut Apu,
 
     reg_pc: u16,
     reg_a: u8,
@@ -35,8 +37,8 @@ pub struct Smp<'a> {
     cycle_count: i32
 }
 
-impl<'a> Smp<'a> {
-    pub fn new(emulator: &'a mut Apu) -> Smp<'a> {
+impl Smp {
+    pub fn new(emulator: *mut Apu) -> Smp {
         let mut ret = Smp {
             emulator: emulator,
 
@@ -59,6 +61,12 @@ impl<'a> Smp<'a> {
         };
         ret.reset();
         ret
+    }
+
+    fn emulator(&self) -> &mut Apu {
+        unsafe {
+            &mut (*self.emulator)
+        }
     }
 
     pub fn reset(&mut self) {
@@ -102,18 +110,18 @@ impl<'a> Smp<'a> {
     }
 
     fn cycles(&mut self, num_cycles: i32) {
-        self.emulator.cpu_cycles_callback(num_cycles);
+        self.emulator().cpu_cycles_callback(num_cycles);
         self.cycle_count += num_cycles;
     }
 
     fn read(&mut self, addr: u16) -> u8 {
         self.cycles(1);
-        self.emulator.read_byte(addr as u32)
+        self.emulator().read_byte(addr as u32)
     }
 
     fn write(&mut self, addr: u16, value: u8) {
         self.cycles(1);
-        self.emulator.write_byte(addr as u32, value);
+        self.emulator().write_byte(addr as u32, value);
     }
 
     fn read_pc(&mut self) -> u8 {
@@ -654,7 +662,7 @@ impl<'a> Smp<'a> {
         self.set_psw_n_z(reg_a as u32);
     }
 
-    fn run(&mut self, target_cycles: i32) -> i32 {
+    pub fn run(&mut self, target_cycles: i32) -> i32 {
         macro_rules! adjust {
             ($op:ident, $x:expr) => ({
                 self.cycles(1);

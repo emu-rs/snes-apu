@@ -23,13 +23,13 @@ pub struct Apu {
     ram: [u8; RAM_LEN],
     ipl_rom: [u8; IPL_ROM_LEN],
 
-    smp: Smp,
+    smp: Option<Smp>,
 
     timers: [Timer; 3],
 
     left_output_buffer: [i16; BUFFER_LEN],
     right_output_buffer: [i16; BUFFER_LEN],
-    overflow_buffer: RingBuffer,
+    //overflow_buffer: RingBuffer,
 
     is_ipl_rom_enabled: bool,
     dsp_reg_address: u8
@@ -37,36 +37,38 @@ pub struct Apu {
 
 impl Apu {
     pub fn new() -> Apu {
-        let mut ret = Apu {
+        Apu {
             ram: [0; RAM_LEN],
             ipl_rom: [0; IPL_ROM_LEN],
 
-            smp: Smp::new(/* TODO: Find some way to get ret in here, or rethink the architecture a bit */),
+            smp: None,
 
             timers: [Timer::new(256), Timer::new(256), Timer::new(32)],
 
             left_output_buffer: [0; BUFFER_LEN],
             right_output_buffer: [0; BUFFER_LEN],
-            overflow_buffer: RingBuffer::new(),
+            //overflow_buffer: RingBuffer::new(),
 
             is_ipl_rom_enabled: true,
             dsp_reg_address: 0
-        };
-        ret.reset();
-        ret
+        }
+    }
+
+    pub fn set_smp(&mut self, smp: Smp) {
+        self.smp = Some(smp);
     }
 
     pub fn reset(&mut self) {
         // TODO: Randomize ram
 
         // TODO: Is there a better way to do this?
-        for i in 0..IPL_ROM_LEN {
+        /*for i in 0..IPL_ROM_LEN {
             self.ipl_rom[i] = DEFAULT_IPL_ROM[i];
-        }
+        }*/
 
-        for timer in self.timers.iter_mut() {
+        /*for timer in self.timers.iter_mut() {
             timer.reset();
-        }
+        }*/
 
         self.is_ipl_rom_enabled = true;
         self.dsp_reg_address = 0;
@@ -74,7 +76,10 @@ impl Apu {
 
     pub fn render(&mut self, /* TODO: Buffers */ num_samples: i32) {
         // TODO: Proper impl
-        self.smp.run(num_samples * 64);
+        match self.smp {
+            Some(ref mut smp) => { smp.run(num_samples * 64); },
+            _ => unreachable!()
+        }
     }
 
     pub fn cpu_cycles_callback(&mut self, num_cycles: i32) {
