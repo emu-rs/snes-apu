@@ -66,9 +66,12 @@ fn play_spc_file(file_name: &String) -> Result<()> {
     }
 
     let mut apu = Apu::new();
-    //let smp = Smp::new(&mut apu as *mut _);
-    //apu.set_smp(smp);
-    //apu.reset();
+    let smp = Smp::new(&mut apu as *mut _);
+    apu.set_smp(smp);
+    apu.reset();
+
+    // loltest
+    apu.render(256);
 
     println!("Return quits.");
     try!(wait_for_key_press_with_busy_icon());
