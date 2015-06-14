@@ -3,8 +3,8 @@
 use super::apu::BUFFER_LEN;
 
 pub struct RingBuffer {
-    left_buffer: [i16; BUFFER_LEN],
-    right_buffer: [i16; BUFFER_LEN],
+    left_buffer: Box<[i16; BUFFER_LEN]>,
+    right_buffer: Box<[i16; BUFFER_LEN]>,
     write_pos: i32,
     read_pos: i32,
     sample_count: i32
@@ -13,8 +13,8 @@ pub struct RingBuffer {
 impl RingBuffer {
     pub fn new() -> RingBuffer {
         RingBuffer {
-            left_buffer: [0; BUFFER_LEN],
-            right_buffer: [0; BUFFER_LEN],
+            left_buffer: box [0; BUFFER_LEN],
+            right_buffer: box [0; BUFFER_LEN],
             write_pos: 0,
             read_pos: 0,
             sample_count: 0

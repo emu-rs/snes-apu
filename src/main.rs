@@ -1,3 +1,5 @@
+#![feature(box_syntax)]
+
 mod snes_apu;
 
 use std::iter;

@@ -20,16 +20,16 @@ const SAMPLE_RATE: usize = 32000;
 pub const BUFFER_LEN: usize = SAMPLE_RATE * 2;
 
 pub struct Apu {
-    ram: [u8; RAM_LEN],
-    ipl_rom: [u8; IPL_ROM_LEN],
+    ram: Box<[u8; RAM_LEN]>,
+    ipl_rom: Box<[u8; IPL_ROM_LEN]>,
 
     smp: Option<Smp>,
 
     timers: [Timer; 3],
 
-    left_output_buffer: [i16; BUFFER_LEN],
-    right_output_buffer: [i16; BUFFER_LEN],
-    //overflow_buffer: RingBuffer,
+    left_output_buffer: Box<[i16; BUFFER_LEN]>,
+    right_output_buffer: Box<[i16; BUFFER_LEN]>,
+    overflow_buffer: RingBuffer,
 
     is_ipl_rom_enabled: bool,
     dsp_reg_address: u8
@@ -38,16 +38,16 @@ pub struct Apu {
 impl Apu {
     pub fn new() -> Apu {
         Apu {
-            ram: [0; RAM_LEN],
-            ipl_rom: [0; IPL_ROM_LEN],
+            ram: box [0; RAM_LEN],
+            ipl_rom: box [0; IPL_ROM_LEN],
 
             smp: None,
 
             timers: [Timer::new(256), Timer::new(256), Timer::new(32)],
 
-            left_output_buffer: [0; BUFFER_LEN],
-            right_output_buffer: [0; BUFFER_LEN],
-            //overflow_buffer: RingBuffer::new(),
+            left_output_buffer: box [0; BUFFER_LEN],
+            right_output_buffer: box [0; BUFFER_LEN],
+            overflow_buffer: RingBuffer::new(),
 
             is_ipl_rom_enabled: true,
             dsp_reg_address: 0
@@ -62,13 +62,13 @@ impl Apu {
         // TODO: Randomize ram
 
         // TODO: Is there a better way to do this?
-        /*for i in 0..IPL_ROM_LEN {
+        for i in 0..IPL_ROM_LEN {
             self.ipl_rom[i] = DEFAULT_IPL_ROM[i];
-        }*/
+        }
 
-        /*for timer in self.timers.iter_mut() {
+        for timer in self.timers.iter_mut() {
             timer.reset();
-        }*/
+        }
 
         self.is_ipl_rom_enabled = true;
         self.dsp_reg_address = 0;
