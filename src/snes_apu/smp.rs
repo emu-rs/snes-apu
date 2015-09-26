@@ -4,6 +4,10 @@
 // Another issue I foresee is many of the opcodes assume the host architecture
 // is little-endian, which won't always be the case. I'm not yet sure how
 // to handle that yet.
+// As for integer wrapping checks in some configs in Rust, that problem
+// is basically ignored for the time being. Release builds shouldn't
+// have those checks, so using that shouldn't be a problem, but it does
+// mean debug builds are basically useless for now.
 // Finally there's a lot of duplication, particularly when opcodes are
 // reading/writing 16-bit values. This can be greatly improved.
 // I'll deal with these problems after the port is finished.
