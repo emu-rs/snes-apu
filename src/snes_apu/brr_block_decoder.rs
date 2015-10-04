@@ -1,4 +1,4 @@
-use super::dsp_helpers::clamp;
+use super::dsp_helpers;
 
 struct BrrBlockDecoder {
     is_end: bool,
@@ -86,10 +86,20 @@ impl BrrBlockDecoder {
                     _ => ()
                 }
 
-                sample = clamp(sample);
+                sample = dsp_helpers::clamp(sample);
             }
         }
 
         self.sample_index = 0;
+    }
+
+    fn read_next_sample(&mut self) -> i16 {
+        let ret = self.samples[self.sample_index as usize];
+        self.sample_index = self.sample_index + 1;
+        ret
+    }
+
+    fn is_finished(&self) -> bool {
+        self.sample_index >= 16
     }
 }
