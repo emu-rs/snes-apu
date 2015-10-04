@@ -67,6 +67,7 @@ impl Smp {
         ret
     }
 
+    #[inline]
     fn emulator(&self) -> &mut Apu {
         unsafe {
             &mut (*self.emulator)

@@ -1,5 +1,6 @@
 use super::spc::Spc;
 use super::smp::Smp;
+use super::dsp::Dsp;
 use super::timer::Timer;
 use super::ring_buffer::RingBuffer;
 
@@ -24,6 +25,7 @@ pub struct Apu {
     ipl_rom: Box<[u8; IPL_ROM_LEN]>,
 
     smp: Option<Smp>,
+    dsp: Option<Dsp>,
 
     timers: [Timer; 3],
 
@@ -42,6 +44,7 @@ impl Apu {
             ipl_rom: box [0; IPL_ROM_LEN],
 
             smp: None,
+            dsp: None,
 
             timers: [Timer::new(256), Timer::new(256), Timer::new(32)],
 
@@ -76,14 +79,19 @@ impl Apu {
 
     pub fn render(&mut self, /* TODO: Buffers */ num_samples: i32) {
         // TODO: Proper impl
-        match self.smp {
-            Some(ref mut smp) => { smp.run(num_samples * 64); },
-            _ => unreachable!()
+        if let Some(ref mut smp) = self.smp {
+            smp.run(num_samples * 64);
         }
     }
 
     pub fn cpu_cycles_callback(&mut self, num_cycles: i32) {
-        // TODO
+        // TODO: Proper impl
+        if let Some(ref mut dsp) = self.dsp {
+            dsp.cycles_callback(num_cycles);
+        }
+        for i in 0..3 {
+            self.timers[i].cpu_cycles_callback(num_cycles);
+        }
     }
 
     pub fn read_byte(&mut self, address: u32) -> u8 {
