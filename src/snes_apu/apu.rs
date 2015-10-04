@@ -82,6 +82,9 @@ impl Apu {
         if let Some(ref mut smp) = self.smp {
             smp.run(num_samples * 64);
         }
+        if let Some(ref mut dsp) = self.dsp {
+            dsp.flush();
+        }
     }
 
     pub fn cpu_cycles_callback(&mut self, num_cycles: i32) {

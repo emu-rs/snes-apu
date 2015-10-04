@@ -1,6 +1,9 @@
 pub mod spc;
 pub mod apu;
 pub mod smp;
+pub mod dsp_helpers;
+pub mod brr_block_decoder;
+pub mod voice;
 pub mod dsp;
 mod binary_reader;
 mod timer;
