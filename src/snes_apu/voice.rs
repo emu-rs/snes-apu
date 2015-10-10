@@ -60,10 +60,24 @@ impl Voice {
         }
     }
 
+    #[inline]
+    fn dsp(&self) -> &mut Dsp {
+        unsafe {
+            &mut (*self.dsp)
+        }
+    }
+
+    #[inline]
+    fn emulator(&self) -> &mut Apu {
+        unsafe {
+            &mut (*self.emulator)
+        }
+    }
+
     pub fn render_sample(&mut self, last_voice_out: i32, noise: i32) -> VoiceOutput {
         let mut pitch = ((self.pitch_high as i32) << 8) | (self.pitch_low as i32);
         if self.pitch_mod {
-            pitch = pitch + (((last_voice_out >> 5) * pitch) >> 10);
+            pitch += ((last_voice_out >> 5) * pitch) >> 10;
         }
         if pitch < 0 {
             pitch = 0;
@@ -92,7 +106,7 @@ impl Voice {
 
         self.sample_pos = self.sample_pos + pitch;
         while self.sample_pos >= 0x1000 {
-            self.sample_pos = self.sample_pos - 0x1000;
+            self.sample_pos -= 0x1000;
             self.read_next_sample();
 
             if self.brr_block_decoder.is_finished() {
@@ -109,5 +123,39 @@ impl Voice {
             right_out: dsp_helpers::multiply_volume(sample, self.vol_right),
             last_voice_out: sample
         }
+    }
+
+    pub fn key_on(&mut self) {
+        self.read_entry();
+        self.sample_address = self.start_sample_address;
+        self.brr_block_decoder.reset();
+        self.read_next_block();
+        self.sample_pos = 0;
+        self.next_sample = 0;
+        self.read_next_sample();
+        self.envelope.key_on();
+    }
+
+    pub fn key_off(&mut self) {
+        self.envelope.key_off();
+    }
+
+    fn read_entry(&mut self) {
+        self.sample_start_address = self.dsp().read_source_dir_start_address(self.source);
+        self.loop_start_address = self.dsp().read_source_dir_loop_address(self.source);
+    }
+
+    fn read_next_block(&mut self) {
+        let mut buf = [0; 9];
+        for i in 0..9 {
+            buf[i] = self.emulator().read_byte(self.sample_address + (i as u32));
+        }
+        self.brr_block_decoder.read(&buf);
+        self.sample_address += 9;
+    }
+
+    fn read_next_sample(&mut self) {
+        self.current_sample = self.next_sample;
+        self.next_sample = self.brr_block_decoder.read_next_sample() as i32;
     }
 }
