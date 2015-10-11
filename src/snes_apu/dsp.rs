@@ -5,6 +5,7 @@ use std::mem;
 use super::apu::Apu;
 use super::voice::Voice;
 use super::filter::Filter;
+use super::spc::Spc;
 use super::dsp_helpers;
 
 const NUM_VOICES: usize = 8;
@@ -136,6 +137,17 @@ impl Dsp {
         self.echo_length = 0;
     }
 
+    pub fn set_state(&mut self, spc: &Spc) {
+        for i in 0..0x80 {
+            match i {
+                0x4c | 0x5c => (), // Do nothing
+                _ => { self.set_register(i, spc.regs[i as usize]); }
+            }
+        }
+
+        self.set_kon(spc.regs[0x4c]);
+    }
+
     pub fn set_output_buffers(&mut self, left_buffer: *mut [i16], right_buffer: *mut [i16]) {
         self.left_output_buffer = left_buffer;
         self.right_output_buffer = right_buffer;
@@ -237,7 +249,7 @@ impl Dsp {
                 0x05 => { voice.envelope.adsr0 = value; },
                 0x06 => { voice.envelope.adsr1 = value; },
                 0x07 => { voice.envelope.gain = value; },
-                _ => { unreachable!(); }
+                _ => () // Do nothing
             }
         } else if voice_address == 0x0f {
             self.set_filter_coefficient(voice_index as i32, value);

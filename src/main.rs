@@ -14,7 +14,7 @@ use std::sync::{Arc, Mutex};
 use emu_audio_types::audio_driver::AudioDriver;
 use emu_core_audio_driver::core_audio_driver::CoreAudioDriver;
 
-use snes_apu::apu::Apu;
+use snes_apu::apu::{Apu, BUFFER_LEN};
 use snes_apu::spc::{Spc, Emulator};
 
 fn main() {
@@ -51,7 +51,7 @@ fn play_spc_file(file_name: &String) -> Result<()> {
     println!(" PSW: {}", spc.psw);
     println!(" SP: {}", spc.sp);
 
-    if let Some(id666_tag) = spc.id666_tag {
+    if let Some(ref id666_tag) = spc.id666_tag {
         println!(" ID666 tag present:");
         println!("  Song title: {}", id666_tag.song_title);
         println!("  Game title: {}", id666_tag.game_title);
@@ -72,12 +72,13 @@ fn play_spc_file(file_name: &String) -> Result<()> {
     }
 
     let mut apu = Apu::new();
+    apu.set_state(&spc);
 
     let mut driver = CoreAudioDriver::new();
     driver.set_render_callback(Some(Box::new(move |buffer, num_frames| {
-        // TODO: Preallocate and reuse
-        let mut left = [0; 64000];
-        let mut right = [0; 64000];
+        // TODO: Preallocate and reuse buffers
+        let mut left = [0; BUFFER_LEN];
+        let mut right = [0; BUFFER_LEN];
         apu.render(&mut left, &mut right, num_frames as i32);
         for i in 0..num_frames {
             let j = i * 2;

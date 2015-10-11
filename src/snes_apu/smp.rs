@@ -21,11 +21,11 @@ use super::apu::Apu;
 pub struct Smp {
     emulator: *mut Apu,
 
-    reg_pc: u16,
-    reg_a: u8,
-    reg_x: u8,
-    reg_y: u8,
-    reg_sp: u8,
+    pub reg_pc: u16,
+    pub reg_a: u8,
+    pub reg_x: u8,
+    pub reg_y: u8,
+    pub reg_sp: u8,
 
     psw_c: bool,
     psw_z: bool,
