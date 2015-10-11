@@ -50,7 +50,7 @@ impl BrrBlockDecoder {
             buf_pos += 1;
 
             for _ in 0..4 {
-                let mut sample = ((nybbles >> 12) as i16) as i32;
+                let mut sample = ((nybbles as i16) >> 12) as i32;
                 nybbles <<= 4;
 
                 if shift <= 12 {

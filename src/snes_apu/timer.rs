@@ -45,7 +45,7 @@ impl Timer {
     }
 
     pub fn set_start_stop_bit(&mut self, value: bool) {
-        if value && self.is_running {
+        if value && !self.is_running {
             self.ticks = 0;
             self.counter_low = 0;
         }
