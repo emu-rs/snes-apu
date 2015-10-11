@@ -2,6 +2,7 @@ use super::dsp::Dsp;
 // TODO: This is a placeholder before I start generalizing traits
 // from the old code.
 use super::apu::Apu;
+use super::envelope::Envelope;
 use super::brr_block_decoder::BrrBlockDecoder;
 use super::dsp_helpers;
 
@@ -14,6 +15,8 @@ pub struct VoiceOutput {
 pub struct Voice {
     dsp: *mut Dsp,
     emulator: *mut Apu,
+
+    envelope: Envelope,
 
     vol_left: u8,
     vol_right: u8,
@@ -39,7 +42,7 @@ impl Voice {
             dsp: dsp,
             emulator: emulator,
 
-            // TODO: Envelope
+            envelope: Envelope::new(dsp),
 
             vol_left: 0,
             vol_right: 0,
@@ -101,7 +104,7 @@ impl Voice {
 
         if self.brr_block_decoder.is_end && self.brr_block_decoder.is_looping {
             self.envelope.key_off();
-            self.envelope.set_level(0);
+            self.envelope.level = 0;
         }
 
         self.sample_pos = self.sample_pos + pitch;
@@ -127,8 +130,8 @@ impl Voice {
 
     pub fn key_on(&mut self) {
         self.read_entry();
-        self.sample_address = self.start_sample_address;
-        self.brr_block_decoder.reset();
+        self.sample_address = self.sample_start_address;
+        self.brr_block_decoder.reset(0, 0);
         self.read_next_block();
         self.sample_pos = 0;
         self.next_sample = 0;

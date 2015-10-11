@@ -2,6 +2,7 @@ pub mod spc;
 pub mod apu;
 pub mod smp;
 pub mod dsp_helpers;
+pub mod envelope;
 pub mod brr_block_decoder;
 pub mod voice;
 pub mod dsp;
