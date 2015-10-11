@@ -1172,7 +1172,7 @@ impl Smp {
                 0xe5 => read_addr!(ld, self.reg_a),
                 0xe6 => read_i_x!(ld),
                 0xe7 => read_i_dp_x!(ld),
-                0xe8 => read_const!(ld, self.reg_x),
+                0xe8 => read_const!(ld, self.reg_a),
                 0xe9 => read_addr!(ld, self.reg_x),
                 0xea => self.set_addr_bit(opcode),
                 0xeb => read_dp!(ld, self.reg_y),
