@@ -3,7 +3,7 @@
 // I can imagine fixing it trivially might lead to performance problems.
 // Another issue I foresee is many of the opcodes assume the host architecture
 // is little-endian, which won't always be the case. I'm not yet sure how
-// to handle that yet.
+// to handle that.
 // As for integer wrapping checks in some configs in Rust, that problem
 // is basically ignored for the time being. Release builds shouldn't
 // have those checks, so using that shouldn't be a problem, but it does
@@ -82,8 +82,8 @@ impl Smp {
     }
 
     pub fn set_reg_ya(&mut self, value: u16) {
-        self.reg_a = (value & 0xff) as u8;
-        self.reg_y = ((value >> 8) & 0xff) as u8;
+        self.reg_a = value as u8;
+        self.reg_y = (value >> 8) as u8;
     }
 
     pub fn get_reg_ya(&self) -> u16 {
@@ -129,8 +129,8 @@ impl Smp {
 
     fn read_pc(&mut self) -> u8 {
         let addr = self.reg_pc;
-        self.reg_pc += 1;
         let ret = self.read(addr);
+        self.reg_pc += 1;
         ret
     }
 
@@ -162,13 +162,13 @@ impl Smp {
     }
 
     fn adc(&mut self, x: u8, y: u8) -> u8 {
-        let x = x as u32;
-        let y = y as u32;
+        let x = x as i32;
+        let y = y as i32;
         let r = x + y + (if self.psw_c { 1 } else { 0 });
-        self.psw_n = Smp::is_negative(r);
+        self.psw_n = Smp::is_negative(r as u32);
         self.psw_v = (!(x ^ y) & (x ^ r) & 0x80) != 0;
         self.psw_h = ((x ^ y ^ r) & 0x10) != 0;
-        self.psw_z = (r & 0xff) == 0;
+        self.psw_z = (r as u8) == 0;
         self.psw_c = r > 0xff;
         (r & 0xff) as u8
     }
@@ -189,7 +189,7 @@ impl Smp {
     fn cmp(&mut self, x: u8, y: u8) -> u8 {
         let r = (x as i32) - (y as i32);
         self.psw_n = (r & 0x80) != 0;
-        self.psw_z = (r & 0xff) == 0;
+        self.psw_z = (r as u8) == 0;
         self.psw_c = r >= 0;
         x
     }
@@ -313,7 +313,7 @@ impl Smp {
         let sp = self.read_dp(addr);
         let y = self.read_pc();
         self.cycles(1);
-        if ((sp & (1 << (x >> 5))) != 0) == ((x & 0x10) != 0) {
+        if ((sp & (1 << ((x as i32) >> 5))) != 0) == ((x & 0x10) != 0) {
             return;
         }
         self.cycles(2);
