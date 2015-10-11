@@ -31,7 +31,7 @@ pub struct Apu {
 
     left_output_buffer: Box<[i16; BUFFER_LEN]>,
     right_output_buffer: Box<[i16; BUFFER_LEN]>,
-    overflow_buffer: RingBuffer,
+    overflow_buffer: Box<RingBuffer>,
 
     is_ipl_rom_enabled: bool,
     dsp_reg_address: u8
@@ -50,7 +50,7 @@ impl Apu {
 
             left_output_buffer: box [0; BUFFER_LEN],
             right_output_buffer: box [0; BUFFER_LEN],
-            overflow_buffer: RingBuffer::new(),
+            overflow_buffer: Box::new(RingBuffer::new()),
 
             is_ipl_rom_enabled: true,
             dsp_reg_address: 0

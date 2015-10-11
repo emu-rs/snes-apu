@@ -16,7 +16,7 @@ pub struct Voice {
     dsp: *mut Dsp,
     emulator: *mut Apu,
 
-    envelope: Envelope,
+    envelope: Box<Envelope>,
 
     vol_left: u8,
     vol_right: u8,
@@ -29,7 +29,7 @@ pub struct Voice {
 
     sample_start_address: u32,
     loop_start_address: u32,
-    brr_block_decoder: BrrBlockDecoder,
+    brr_block_decoder: Box<BrrBlockDecoder>,
     sample_address: u32,
     sample_pos: i32,
     current_sample: i32,
@@ -42,7 +42,7 @@ impl Voice {
             dsp: dsp,
             emulator: emulator,
 
-            envelope: Envelope::new(dsp),
+            envelope: Box::new(Envelope::new(dsp)),
 
             vol_left: 0,
             vol_right: 0,
@@ -55,7 +55,7 @@ impl Voice {
 
             sample_start_address: 0,
             loop_start_address: 0,
-            brr_block_decoder: BrrBlockDecoder::new(),
+            brr_block_decoder: Box::new(BrrBlockDecoder::new()),
             sample_address: 0,
             sample_pos: 0,
             current_sample: 0,
