@@ -151,6 +151,11 @@ impl Dsp {
 
 
             }
+
+            // TODO
+
+            self.counter = (self.counter + 1) % COUNTER_RANGE;
+            self.cycles_since_last_flush -= 64;
         }
     }
 
