@@ -106,9 +106,3 @@ impl Apu {
         // TODO
     }
 }
-
-impl Drop for Apu {
-    fn drop(&mut self) {
-        println!("Dropping apu");
-    }
-}
