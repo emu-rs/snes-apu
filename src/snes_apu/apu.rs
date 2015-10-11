@@ -64,12 +64,17 @@ impl Apu {
 
     pub fn reset(&mut self) {
         // TODO: Randomize ram
-
         // TODO: Is there a better way to do this?
         for i in 0..IPL_ROM_LEN {
             self.ipl_rom[i] = DEFAULT_IPL_ROM[i];
         }
 
+        if let Some(ref mut smp) = self.smp {
+            smp.reset();
+        }
+        if let Some(ref mut dsp) = self.dsp {
+            dsp.reset();
+        }
         for timer in self.timers.iter_mut() {
             timer.reset();
         }
@@ -78,23 +83,28 @@ impl Apu {
         self.dsp_reg_address = 0;
     }
 
-    pub fn render(&mut self, /* TODO: Buffers */ num_samples: i32) {
-        // TODO: Proper impl
+    pub fn render(&mut self, left_buffer: &mut [i16], right_buffer: &mut [i16], num_samples: i32) {
         if let Some(ref mut smp) = self.smp {
-            smp.run(num_samples * 64);
-        }
-        if let Some(ref mut dsp) = self.dsp {
-            dsp.flush();
+            if let Some(ref mut dsp) = self.dsp {
+                while self.overflow_buffer.get_sample_count() < num_samples {
+                    // TODO: Unsafe is icky :)
+                    unsafe { dsp.set_output_buffers(&mut *self.left_output_buffer as *mut _, &mut *self.right_output_buffer as *mut _); }
+                    smp.run(num_samples * 64);
+                    dsp.flush();
+                    self.overflow_buffer.write(&mut *self.left_output_buffer, &mut *self.right_output_buffer, dsp.output_index);
+                }
+            }
+
+            self.overflow_buffer.read(left_buffer, right_buffer, num_samples);
         }
     }
 
     pub fn cpu_cycles_callback(&mut self, num_cycles: i32) {
-        // TODO: Proper impl
         if let Some(ref mut dsp) = self.dsp {
             dsp.cycles_callback(num_cycles);
         }
-        for i in 0..3 {
-            self.timers[i].cpu_cycles_callback(num_cycles);
+        for timer in self.timers.iter_mut() {
+            timer.cpu_cycles_callback(num_cycles);
         }
     }
 

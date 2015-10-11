@@ -10,9 +10,9 @@ enum Mode {
 pub struct Envelope {
     dsp: *mut Dsp,
 
-    adsr0: u8,
-    adsr1: u8,
-    gain: u8,
+    pub adsr0: u8,
+    pub adsr1: u8,
+    pub gain: u8,
 
     mode: Mode,
     pub level: i32,

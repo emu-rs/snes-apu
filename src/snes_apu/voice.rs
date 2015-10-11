@@ -16,15 +16,15 @@ pub struct Voice {
     dsp: *mut Dsp,
     emulator: *mut Apu,
 
-    envelope: Box<Envelope>,
+    pub envelope: Box<Envelope>,
 
-    vol_left: u8,
-    vol_right: u8,
-    pitch_low: u8,
-    pitch_high: u8,
-    source: u8,
-    pitch_mod: bool,
-    noise_on: bool,
+    pub vol_left: u8,
+    pub vol_right: u8,
+    pub pitch_low: u8,
+    pub pitch_high: u8,
+    pub source: u8,
+    pub pitch_mod: bool,
+    pub noise_on: bool,
     pub echo_on: bool,
 
     sample_start_address: u32,

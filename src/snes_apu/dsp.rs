@@ -1,3 +1,5 @@
+use std::mem;
+
 // TODO: This is a placeholder before I start generalizing traits
 // from the old code.
 use super::apu::Apu;
@@ -25,9 +27,10 @@ pub struct Dsp {
     left_filter: Box<Filter>,
     right_filter: Box<Filter>,
 
-    /*left_output_buffer: i16,
-    right_output_buffer: i16,
-    output_index: i32,*/
+    // TODO: Unsafe is icky :)
+    left_output_buffer: *mut [i16],
+    right_output_buffer: *mut [i16],
+    pub output_index: i32,
 
     vol_left: u8,
     vol_right: u8,
@@ -59,7 +62,9 @@ impl Dsp {
             left_filter: Box::new(Filter::new()),
             right_filter: Box::new(Filter::new()),
 
-            // TODO
+            left_output_buffer: unsafe { mem::uninitialized() },
+            right_output_buffer: unsafe { mem::uninitialized() },
+            output_index: 0,
 
             vol_left: 0,
             vol_right: 0,
@@ -131,6 +136,12 @@ impl Dsp {
         self.echo_length = 0;
     }
 
+    pub fn set_output_buffers(&mut self, left_buffer: *mut [i16], right_buffer: *mut [i16]) {
+        self.left_output_buffer = left_buffer;
+        self.right_output_buffer = right_buffer;
+        self.output_index = 0;
+    }
+
     pub fn cycles_callback(&mut self, num_cycles: i32) {
         self.cycles_since_last_flush = self.cycles_since_last_flush + num_cycles;
     }
@@ -149,7 +160,7 @@ impl Dsp {
             let mut left_echo_out = 0;
             let mut right_echo_out = 0;
             let mut last_voice_out = 0;
-            for voice in &mut self.voices {
+            for voice in self.voices.iter_mut() {
                 let output = voice.render_sample(last_voice_out, self.noise);
 
                 left_out = dsp_helpers::clamp(left_out + output.left_out);
@@ -170,7 +181,13 @@ impl Dsp {
             let left_echo_in = (((((self.emulator().read_u8(echo_read_address + 1) as i32) << 8) | (self.emulator().read_u8(echo_read_address) as i32)) as i16) & !1) as i32;
             let right_echo_in = (((((self.emulator().read_u8(echo_read_address + 3) as i32) << 8) | (self.emulator().read_u8(echo_read_address + 2) as i32)) as i16) & !1) as i32;
 
-            // TODO: Write to output buffers and increment output_index
+            unsafe {
+                let left_output_array = &mut (*self.left_output_buffer) as &mut [i16];
+                let right_output_array = &mut (*self.right_output_buffer) as &mut [i16];
+                left_output_array[self.output_index as usize] = dsp_helpers::clamp(left_out + dsp_helpers::multiply_volume(left_echo_in, self.echo_vol_left)) as i16;
+                right_output_array[self.output_index as usize] = dsp_helpers::clamp(right_out + dsp_helpers::multiply_volume(right_echo_in, self.echo_vol_right)) as i16;
+            }
+            self.output_index += 1;
 
             if self.echo_write_enabled {
                 left_echo_out = dsp_helpers::clamp(left_echo_out + ((((left_echo_in * ((self.echo_feedback as i8) as i32)) >> 7) as i16) as i32)) & !1;
@@ -197,6 +214,66 @@ impl Dsp {
         self.is_flushing = false;
     }
 
+    pub fn set_register(&mut self, address: u8, value: u8) {
+        if (address & 0x80) != 0 {
+            return;
+        }
+
+        if !self.is_flushing {
+            self.flush();
+        }
+
+        let voice_index = address >> 4;
+        let voice_address = address & 0x0f;
+        // TODO: Finish filling these out
+        if voice_address < 0x0a {
+            let voice = &mut self.voices[voice_index as usize];
+            match voice_address {
+                0x00 => { voice.vol_left = value; },
+                0x01 => { voice.vol_right = value; },
+                0x02 => { voice.pitch_low = value; },
+                0x03 => { voice.pitch_high = value; },
+                0x04 => { voice.source = value; },
+                0x05 => { voice.envelope.adsr0 = value; },
+                0x06 => { voice.envelope.adsr1 = value; },
+                0x07 => { voice.envelope.gain = value; },
+                _ => { unreachable!(); }
+            }
+        } else if voice_address == 0x0f {
+            self.set_filter_coefficient(voice_index as i32, value);
+        } else {
+            match address {
+                0x0c => { self.vol_left = value; },
+                0x1c => { self.vol_right = value; },
+                0x2c => { self.echo_vol_left = value; },
+                0x3c => { self.echo_vol_right = value; },
+                0x4c => { self.set_kon(value); },
+                0x5c => { self.set_kof(value); },
+                0x6c => { self.set_flg(value); },
+
+                0x0d => { self.echo_feedback = value; },
+
+                0x2d => { self.set_pmon(value); },
+                0x3d => { self.set_nov(value); },
+                0x4d => { self.set_eon(value); },
+                0x5d => { self.source_dir = value; },
+                0x6d => { self.echo_start_address = (value as u16) << 8; },
+                0x7d => { self.echo_delay = value & 0x0f; },
+
+                _ => () // Do nothing
+            }
+        }
+    }
+
+    pub fn get_register(&mut self, address: u8) -> u8 {
+        if !self.is_flushing {
+            self.flush();
+        }
+
+        // TODO
+        0
+    }
+
     pub fn read_counter(&self, rate: i32) -> bool {
         ((self.counter + COUNTER_OFFSETS[rate as usize]) % COUNTER_RATES[rate as usize]) != 0
     }
@@ -216,5 +293,44 @@ impl Dsp {
         let mut ret = self.emulator().read_u8(entry_address as u32 + 2) as u32;
         ret |= (self.emulator().read_u8((entry_address as u32) + 3) as u32) << 8;
         ret
+    }
+
+    fn set_kon(&mut self, voice_mask: u8) {
+        for i in 0..NUM_VOICES {
+            if ((voice_mask as usize) & (1 << i)) != 0 {
+                self.voices[i].key_on();
+            }
+        }
+    }
+
+    fn set_kof(&mut self, voice_mask: u8) {
+        for i in 0..NUM_VOICES {
+            if ((voice_mask as usize) & (1 << i)) != 0 {
+                self.voices[i].key_off();
+            }
+        }
+    }
+
+    fn set_flg(&mut self, value: u8) {
+        self.noise_clock = value & 0x1f;
+        self.echo_write_enabled = (value & 0x20) != 0;
+    }
+
+    fn set_pmon(&mut self, voice_mask: u8) {
+        for i in 0..NUM_VOICES {
+            self.voices[i].pitch_mod = ((voice_mask as usize) & (1 << i)) != 0;
+        }
+    }
+
+    fn set_nov(&mut self, voice_mask: u8) {
+        for i in 0..NUM_VOICES {
+            self.voices[i].noise_on = ((voice_mask as usize) & (1 << i)) != 0;
+        }
+    }
+
+    fn set_eon(&mut self, voice_mask: u8) {
+        for i in 0..NUM_VOICES {
+            self.voices[i].echo_on = ((voice_mask as usize) & (1 << i)) != 0;
+        }
     }
 }
