@@ -155,7 +155,7 @@ impl Dsp {
     }
 
     pub fn cycles_callback(&mut self, num_cycles: i32) {
-        self.cycles_since_last_flush = self.cycles_since_last_flush + num_cycles;
+        self.cycles_since_last_flush += num_cycles;
     }
 
     pub fn flush(&mut self) {
@@ -242,17 +242,19 @@ impl Dsp {
         let voice_address = address & 0x0f;
         // TODO: Finish filling these out
         if voice_address < 0x0a {
-            let voice = &mut self.voices[voice_index as usize];
-            match voice_address {
-                0x00 => { voice.vol_left = value; },
-                0x01 => { voice.vol_right = value; },
-                0x02 => { voice.pitch_low = value; },
-                0x03 => { voice.pitch_high = value; },
-                0x04 => { voice.source = value; },
-                0x05 => { voice.envelope.adsr0 = value; },
-                0x06 => { voice.envelope.adsr1 = value; },
-                0x07 => { voice.envelope.gain = value; },
-                _ => () // Do nothing
+            if voice_address < 8 {
+                let voice = &mut self.voices[voice_index as usize];
+                match voice_address {
+                    0x00 => { voice.vol_left = value; },
+                    0x01 => { voice.vol_right = value; },
+                    0x02 => { voice.pitch_low = value; },
+                    0x03 => { voice.pitch_high = value; },
+                    0x04 => { voice.source = value; },
+                    0x05 => { voice.envelope.adsr0 = value; },
+                    0x06 => { voice.envelope.adsr1 = value; },
+                    0x07 => { voice.envelope.gain = value; },
+                    _ => () // Do nothing
+                }
             }
         } else if voice_address == 0x0f {
             self.set_filter_coefficient(voice_index as i32, value);
@@ -333,7 +335,7 @@ impl Dsp {
     }
 
     fn set_pmon(&mut self, voice_mask: u8) {
-        for i in 0..NUM_VOICES {
+        for i in 1..NUM_VOICES {
             self.voices[i].pitch_mod = ((voice_mask as usize) & (1 << i)) != 0;
         }
     }

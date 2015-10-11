@@ -116,7 +116,7 @@ impl Apu {
                 0xf2 => self.dsp_reg_address,
                 0xf3 => if let Some(ref mut dsp) = self.dsp { dsp.get_register(self.dsp_reg_address) } else { 0 },
 
-                0xfa | 0xfb | 0xfc => 0,
+                0xfa ... 0xfc => 0,
 
                 0xfd => self.timers[0].read_counter(),
                 0xfe => self.timers[1].read_counter(),
@@ -187,6 +187,7 @@ impl Apu {
 
     fn set_test_reg(&self, value: u8) {
         // TODO
+        let _ = value;
         panic!("Test reg not yet implemented");
     }
 
