@@ -248,7 +248,7 @@ impl Dsp {
                     0x00 => { voice.vol_left = value; },
                     0x01 => { voice.vol_right = value; },
                     0x02 => { voice.pitch_low = value; },
-                    0x03 => { voice.pitch_high = value; },
+                    0x03 => { voice.set_pitch_high(value); },
                     0x04 => { voice.source = value; },
                     0x05 => { voice.envelope.adsr0 = value; },
                     0x06 => { voice.envelope.adsr1 = value; },
@@ -331,7 +331,7 @@ impl Dsp {
 
     fn set_flg(&mut self, value: u8) {
         self.noise_clock = value & 0x1f;
-        self.echo_write_enabled = (value & 0x20) != 0;
+        self.echo_write_enabled = (value & 0x20) == 0;
     }
 
     fn set_pmon(&mut self, voice_mask: u8) {

@@ -21,7 +21,7 @@ pub struct Voice {
     pub vol_left: u8,
     pub vol_right: u8,
     pub pitch_low: u8,
-    pub pitch_high: u8,
+    pitch_high: u8,
     pub source: u8,
     pub pitch_mod: bool,
     pub noise_on: bool,
@@ -126,6 +126,14 @@ impl Voice {
             right_out: dsp_helpers::multiply_volume(sample, self.vol_right),
             last_voice_out: sample
         }
+    }
+
+    pub fn get_pitch_high(&self) -> u8 {
+        self.pitch_high
+    }
+
+    pub fn set_pitch_high(&mut self, value: u8) {
+        self.pitch_high = value & 0x3f;
     }
 
     pub fn key_on(&mut self) {
