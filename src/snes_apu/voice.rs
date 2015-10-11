@@ -7,9 +7,9 @@ use super::brr_block_decoder::BrrBlockDecoder;
 use super::dsp_helpers;
 
 pub struct VoiceOutput {
-    left_out: i32,
-    right_out: i32,
-    last_voice_out: i32
+    pub left_out: i32,
+    pub right_out: i32,
+    pub last_voice_out: i32
 }
 
 pub struct Voice {
@@ -25,7 +25,7 @@ pub struct Voice {
     source: u8,
     pitch_mod: bool,
     noise_on: bool,
-    echo_on: bool,
+    pub echo_on: bool,
 
     sample_start_address: u32,
     loop_start_address: u32,

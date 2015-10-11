@@ -3,6 +3,7 @@
 use super::apu::Apu;
 use super::voice::Voice;
 use super::filter::Filter;
+use super::dsp_helpers;
 
 const NUM_VOICES: usize = 8;
 
@@ -135,6 +136,8 @@ impl Dsp {
     }
 
     pub fn flush(&mut self) {
+        self.is_flushing = true;
+
         while self.cycles_since_last_flush > 64 {
             if !self.read_counter(self.noise_clock as i32) {
                 let feedback = (self.noise << 13) ^ (self.noise << 14);
@@ -146,17 +149,52 @@ impl Dsp {
             let mut left_echo_out = 0;
             let mut right_echo_out = 0;
             let mut last_voice_out = 0;
-            for j in 0..NUM_VOICES {
-                let voice = &mut self.voices[j];
+            for voice in &mut self.voices {
+                let output = voice.render_sample(last_voice_out, self.noise);
 
+                left_out = dsp_helpers::clamp(left_out + output.left_out);
+                right_out = dsp_helpers::clamp(right_out + output.right_out);
 
+                if voice.echo_on {
+                    left_echo_out = dsp_helpers::clamp(left_echo_out + output.left_out);
+                    right_echo_out = dsp_helpers::clamp(right_echo_out + output.right_out);
+                }
+
+                last_voice_out = output.last_voice_out;
             }
 
-            // TODO
+            left_out = dsp_helpers::multiply_volume(left_out, self.vol_left);
+            right_out = dsp_helpers::multiply_volume(right_out, self.vol_right);
+
+            let echo_read_address = (self.echo_start_address as u32) + (self.echo_pos as u32);
+            let left_echo_in = (((((self.emulator().read_u8(echo_read_address + 1) as i32) << 8) | (self.emulator().read_u8(echo_read_address) as i32)) as i16) & !1) as i32;
+            let right_echo_in = (((((self.emulator().read_u8(echo_read_address + 3) as i32) << 8) | (self.emulator().read_u8(echo_read_address + 2) as i32)) as i16) & !1) as i32;
+
+            // TODO: Write to output buffers and increment output_index
+
+            if self.echo_write_enabled {
+                left_echo_out = dsp_helpers::clamp(left_echo_out + ((((left_echo_in * ((self.echo_feedback as i8) as i32)) >> 7) as i16) as i32)) & !1;
+                right_echo_out = dsp_helpers::clamp(right_echo_out + ((((right_echo_in * ((self.echo_feedback as i8) as i32)) >> 7) as i16) as i32)) & !1;
+
+                let echo_write_address = (self.echo_start_address as u32) + (self.echo_pos as u32);
+                self.emulator().write_u8(echo_write_address + 0, left_echo_out as u8);
+                self.emulator().write_u8(echo_write_address + 1, (left_echo_out >> 8) as u8);
+                self.emulator().write_u8(echo_write_address + 2, right_echo_out as u8);
+                self.emulator().write_u8(echo_write_address + 3, (right_echo_out >> 8) as u8);
+            }
+            if self.echo_pos == 0 {
+                self.echo_length = (self.echo_delay as i32) * 0x800;
+            }
+            self.echo_pos += 4;
+            if self.echo_pos >= self.echo_length {
+                self.echo_pos = 0;
+            }
 
             self.counter = (self.counter + 1) % COUNTER_RANGE;
             self.cycles_since_last_flush -= 64;
         }
+
+        self.is_flushing = false;
     }
 
     pub fn read_counter(&self, rate: i32) -> bool {
