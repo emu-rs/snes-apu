@@ -15,7 +15,7 @@ pub struct Envelope {
     gain: u8,
 
     mode: Mode,
-    level: i32,
+    pub level: i32,
     hidden_level: i32
 }
 

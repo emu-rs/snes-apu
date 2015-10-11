@@ -1,7 +1,7 @@
 const NUM_TAPS: usize = 8;
 
 pub struct Filter {
-    coefficients: [u8; NUM_TAPS],
+    pub coefficients: [u8; NUM_TAPS],
 
     buffer: [i32; NUM_TAPS],
     buffer_pos: i32

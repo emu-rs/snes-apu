@@ -55,8 +55,9 @@ impl Apu {
             is_ipl_rom_enabled: true,
             dsp_reg_address: 0
         });
-        ret.smp = Some(Box::new(Smp::new(&mut *ret as *mut _)));
-        ret.dsp = Some(Dsp::new(&mut *ret as *mut _));
+        let ret_ptr = &mut *ret as *mut _;
+        ret.smp = Some(Box::new(Smp::new(ret_ptr)));
+        ret.dsp = Some(Dsp::new(ret_ptr));
         ret.reset();
         ret
     }
@@ -97,11 +98,17 @@ impl Apu {
         }
     }
 
-    pub fn read_byte(&mut self, address: u32) -> u8 {
+    pub fn read_u8(&mut self, address: u32) -> u8 {
         0 // TODO
     }
 
-    pub fn write_byte(&mut self, address: u32, value: u8) {
+    pub fn write_u8(&mut self, address: u32, value: u8) {
         // TODO
+    }
+}
+
+impl Drop for Apu {
+    fn drop(&mut self) {
+        println!("Dropping apu");
     }
 }

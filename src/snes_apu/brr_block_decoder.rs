@@ -1,8 +1,8 @@
 use super::dsp_helpers;
 
-struct BrrBlockDecoder {
-    is_end: bool,
-    is_looping: bool,
+pub struct BrrBlockDecoder {
+    pub is_end: bool,
+    pub is_looping: bool,
     samples: [i16; 16],
 
     sample_index: i32,
@@ -44,13 +44,13 @@ impl BrrBlockDecoder {
 
         let out_pos = 0;
         for i in 0..4 {
-            let nybbles = buf[buf_pos];
+            let mut nybbles = buf[buf_pos] as i32;
             buf_pos += 1;
-            nybbles = (nybbles << 8) | buf[buf_pos];
+            nybbles = (nybbles << 8) | (buf[buf_pos] as i32);
             buf_pos += 1;
 
             for j in 0..4 {
-                let sample = ((nybbles >> 12) as i16) as i32;
+                let mut sample = ((nybbles >> 12) as i16) as i32;
                 nybbles <<= 4;
 
                 if shift <= 12 {
@@ -93,13 +93,13 @@ impl BrrBlockDecoder {
         self.sample_index = 0;
     }
 
-    fn read_next_sample(&mut self) -> i16 {
+    pub fn read_next_sample(&mut self) -> i16 {
         let ret = self.samples[self.sample_index as usize];
         self.sample_index += 1;
         ret
     }
 
-    fn is_finished(&self) -> bool {
+    pub fn is_finished(&self) -> bool {
         self.sample_index >= 16
     }
 }
