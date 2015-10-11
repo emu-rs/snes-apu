@@ -47,7 +47,7 @@ impl Voice {
             vol_left: 0,
             vol_right: 0,
             pitch_low: 0,
-            pitch_high: 0,
+            pitch_high: 0x10,
             source: 0,
             pitch_mod: false,
             noise_on: false,
@@ -92,7 +92,7 @@ impl Voice {
         let p1 = self.sample_pos;
         let p2 = 0x1000 - p1;
         let mut sample = if self.noise_on {
-            (noise * 2) as i32
+            ((noise * 2) as i16) as i32
         } else {
             dsp_helpers::clamp((self.current_sample * p2 + self.next_sample * p1) >> 12) & !1
         };
@@ -102,12 +102,12 @@ impl Voice {
 
         sample = ((sample * env_level) >> 11) & !1;
 
-        if self.brr_block_decoder.is_end && self.brr_block_decoder.is_looping {
+        if self.brr_block_decoder.is_end && !self.brr_block_decoder.is_looping {
             self.envelope.key_off();
             self.envelope.level = 0;
         }
 
-        self.sample_pos = self.sample_pos + pitch;
+        self.sample_pos += pitch;
         while self.sample_pos >= 0x1000 {
             self.sample_pos -= 0x1000;
             self.read_next_sample();
