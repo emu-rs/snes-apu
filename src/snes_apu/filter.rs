@@ -17,12 +17,12 @@ impl Filter {
         }
     }
 
-    pub fn next(&mut self, value: i32) {
-        self.buffer[self.buffer_pos] = value;
+    pub fn next(&mut self, value: i32) -> i32 {
+        self.buffer[self.buffer_pos as usize] = value;
 
         let mut ret = 0;
         for i in 0..NUM_TAPS {
-            ret += (self.buffer[(self.buffer_pos + (i as i32)) % NUM_TAPS] * ((self.coefficients[i] as i8) as i32)) >> 7;
+            ret += (self.buffer[((self.buffer_pos + (i as i32)) as usize) % NUM_TAPS] * ((self.coefficients[i] as i8) as i32)) >> 7;
         }
 
         self.buffer_pos = match self.buffer_pos {

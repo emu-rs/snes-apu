@@ -1,6 +1,8 @@
 // TODO: This is a placeholder before I start generalizing traits
 // from the old code.
 use super::apu::Apu;
+use super::voice::Voice;
+use super::filter::Filter;
 
 const NUM_VOICES: usize = 8;
 
@@ -17,27 +19,69 @@ static COUNTER_OFFSETS: [i32; 32] = [
 pub struct Dsp {
     emulator: *mut Apu,
 
+    voices: Vec<Box<Voice>>,
+
+    left_filter: Box<Filter>,
+    right_filter: Box<Filter>,
+
+    /*left_output_buffer: i16,
+    right_output_buffer: i16,
+    output_index: i32,
+
+    vol_left: u8,
+    vol_right: u8,
+    echo_vol_left: u8,
+    echo_vol_right: u8,*/
+    noise_clock: u8,
+    /*echo_write_enabled: bool,
+    echo_feedback: u8,
+    source_dir: u8,
+    echo_start_address: u16,
+    echo_delay: u8,*/
+
     counter: i32,
+
     cycles_since_last_flush: i32,
-    noise: i32
+    //is_flushing: bool,
+    noise: i32,
+    //echo_pos: i32,
+    //echo_length: i32
 }
 
 impl Dsp {
-    pub fn new(emulator: *mut Apu) -> Dsp {
-        let mut ret = Dsp {
+    pub fn new(emulator: *mut Apu) -> Box<Dsp> {
+        let mut ret = Box::new(Dsp {
             emulator: emulator,
 
+            voices: Vec::with_capacity(NUM_VOICES),
+
+            left_filter: Box::new(Filter::new()),
+            right_filter: Box::new(Filter::new()),
+
+            // TODO
+
+            noise_clock: 0,
+
+            // TODO
+
             counter: 0,
+
             cycles_since_last_flush: 0,
             noise: 0
-        };
+        });
+        for i in 0..NUM_VOICES {
+            ret.voices.push(Box::new(Voice::new(&mut *ret as *mut _, emulator)));
+        }
         ret.reset();
         ret
     }
 
     pub fn reset(&mut self) {
         // TODO: Proper impl
+        self.noise_clock = 0;
+
         self.counter = 0;
+
         self.cycles_since_last_flush = 0;
         self.noise = 0x4000;
     }
@@ -52,7 +96,7 @@ impl Dsp {
 
     pub fn flush(&mut self) {
         while self.cycles_since_last_flush > 64 {
-            if !self.read_counter(self.noise_clock) {
+            if !self.read_counter(self.noise_clock as i32) {
                 let feedback = (self.noise << 13) ^ (self.noise << 14);
                 self.noise = (feedback & 0x4000) ^ (self.noise >> 1);
             }
@@ -63,6 +107,9 @@ impl Dsp {
             let mut right_echo_out = 0;
             let mut last_voice_out = 0;
             for j in 0..NUM_VOICES {
+                let voice = &mut self.voices[j];
+
+
             }
         }
     }
