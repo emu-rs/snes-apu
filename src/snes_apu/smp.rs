@@ -12,8 +12,6 @@
 // reading/writing 16-bit values. This can be greatly improved.
 // I'll deal with these problems after the port is finished.
 
-use std::sync::Arc;
-
 // TODO: This is a placeholder before I start generalizing traits
 // from the old code.
 use super::apu::Apu;
@@ -1125,9 +1123,9 @@ impl Smp {
                 0xb7 => read_i_dp_y!(sbc),
                 0xb8 => write_dp_const!(sbc, false),
                 0xb9 => write_i_x_i_y!(sbc, false),
-                0xba => read_dpw!(sbw, false),
-                0xbb => adjust_dp_x!(dec),
-                0xbc => adjust!(dec, self.reg_a),
+                0xba => read_dpw!(ldw, false),
+                0xbb => adjust_dp_x!(inc),
+                0xbc => adjust!(inc, self.reg_a),
                 0xbd => transfer!(self.reg_x, self.reg_sp, true),
                 0xbe => self.das(),
                 0xbf => self.lda_i_x_inc(),
