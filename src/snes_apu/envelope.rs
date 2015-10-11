@@ -57,7 +57,7 @@ impl Envelope {
         match self.mode {
             Mode::Release => {
                 env -= 8;
-                if (env < 0) {
+                if env < 0 {
                     env = 0;
                 }
                 self.level = env;

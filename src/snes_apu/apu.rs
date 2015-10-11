@@ -87,8 +87,7 @@ impl Apu {
         if let Some(ref mut smp) = self.smp {
             if let Some(ref mut dsp) = self.dsp {
                 while self.overflow_buffer.get_sample_count() < num_samples {
-                    // TODO: Unsafe is icky :)
-                    unsafe { dsp.set_output_buffers(&mut *self.left_output_buffer as *mut _, &mut *self.right_output_buffer as *mut _); }
+                    dsp.set_output_buffers(&mut *self.left_output_buffer as *mut _, &mut *self.right_output_buffer as *mut _);
                     smp.run(num_samples * 64);
                     dsp.flush();
                     self.overflow_buffer.write(&mut *self.left_output_buffer, &mut *self.right_output_buffer, dsp.output_index);

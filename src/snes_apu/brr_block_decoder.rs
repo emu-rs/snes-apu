@@ -42,14 +42,14 @@ impl BrrBlockDecoder {
         let filter = (raw_header >> 2) & 0x03;
         let shift = raw_header >> 4;
 
-        let out_pos = 0;
-        for i in 0..4 {
+        let mut out_pos = 0;
+        for _ in 0..4 {
             let mut nybbles = buf[buf_pos] as i32;
             buf_pos += 1;
             nybbles = (nybbles << 8) | (buf[buf_pos] as i32);
             buf_pos += 1;
 
-            for j in 0..4 {
+            for _ in 0..4 {
                 let mut sample = ((nybbles >> 12) as i16) as i32;
                 nybbles <<= 4;
 
@@ -87,6 +87,11 @@ impl BrrBlockDecoder {
                 }
 
                 sample = dsp_helpers::clamp(sample);
+                let sample_16 = (sample << 1) as i16;
+                self.samples[out_pos] = sample_16;
+                out_pos += 1;
+                self.last_last_sample = self.last_sample;
+                self.last_sample = sample_16;
             }
         }
 

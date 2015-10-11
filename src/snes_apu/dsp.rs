@@ -87,7 +87,7 @@ impl Dsp {
             echo_length: 0,
         });
         let ret_ptr = &mut *ret as *mut _;
-        for i in 0..NUM_VOICES {
+        for _ in 0..NUM_VOICES {
             ret.voices.push(Box::new(Voice::new(ret_ptr, emulator)));
         }
         ret.reset();
@@ -190,8 +190,11 @@ impl Dsp {
             right_out = dsp_helpers::multiply_volume(right_out, self.vol_right);
 
             let echo_read_address = (self.echo_start_address as u32) + (self.echo_pos as u32);
-            let left_echo_in = (((((self.emulator().read_u8(echo_read_address + 1) as i32) << 8) | (self.emulator().read_u8(echo_read_address) as i32)) as i16) & !1) as i32;
-            let right_echo_in = (((((self.emulator().read_u8(echo_read_address + 3) as i32) << 8) | (self.emulator().read_u8(echo_read_address + 2) as i32)) as i16) & !1) as i32;
+            let mut left_echo_in = (((((self.emulator().read_u8(echo_read_address + 1) as i32) << 8) | (self.emulator().read_u8(echo_read_address) as i32)) as i16) & !1) as i32;
+            let mut right_echo_in = (((((self.emulator().read_u8(echo_read_address + 3) as i32) << 8) | (self.emulator().read_u8(echo_read_address + 2) as i32)) as i16) & !1) as i32;
+
+            left_echo_in = dsp_helpers::clamp(self.left_filter.next(left_echo_in));
+            right_echo_in = dsp_helpers::clamp(self.right_filter.next(right_echo_in));
 
             unsafe {
                 let left_output_array = &mut (*self.left_output_buffer) as &mut [i16];
@@ -283,6 +286,7 @@ impl Dsp {
         }
 
         // TODO
+        let _ = address;
         0
     }
 

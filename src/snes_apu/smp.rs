@@ -655,9 +655,9 @@ impl Smp {
     fn wait(&mut self) {
         // TODO
         panic!("wait occurred");
-        loop {
+        /*loop {
             self.cycles(2);
-        }
+        }*/
     }
 
     fn xcn(&mut self) {
@@ -792,8 +792,8 @@ impl Smp {
                 let mut addr2 = self.read_dp(addr) as u16;
                 addr += 1;
                 addr2 |= (self.read_dp(addr) as u16) << 8;
-                let reg_x = self.reg_x;
-                let x = self.read(((addr as i16) + ((reg_x as i8) as i16)) as u16);
+                let reg_y = self.reg_y;
+                let x = self.read(((addr2 as i16) + ((reg_y as i8) as i16)) as u16);
                 let reg_a = self.reg_a;
                 self.reg_a = self.$op(reg_a, x);
             })
