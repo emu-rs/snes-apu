@@ -1,8 +1,8 @@
-use super::spc::Spc;
 use super::smp::Smp;
 use super::dsp::Dsp;
 use super::timer::Timer;
 use super::ring_buffer::RingBuffer;
+use super::spc::Spc;
 
 pub const RAM_LEN: usize = 0x10000;
 
@@ -24,8 +24,8 @@ pub struct Apu {
     ram: Box<[u8; RAM_LEN]>,
     ipl_rom: Box<[u8; IPL_ROM_LEN]>,
 
-    smp: Option<Smp>,
-    dsp: Option<Dsp>,
+    smp: Option<Box<Smp>>,
+    dsp: Option<Box<Dsp>>,
 
     timers: [Timer; 3],
 
@@ -38,8 +38,8 @@ pub struct Apu {
 }
 
 impl Apu {
-    pub fn new() -> Apu {
-        Apu {
+    pub fn new() -> Box<Apu> {
+        let mut ret = Box::new(Apu {
             ram: box [0; RAM_LEN],
             ipl_rom: box [0; IPL_ROM_LEN],
 
@@ -54,11 +54,11 @@ impl Apu {
 
             is_ipl_rom_enabled: true,
             dsp_reg_address: 0
-        }
-    }
-
-    pub fn set_smp(&mut self, smp: Smp) {
-        self.smp = Some(smp);
+        });
+        ret.smp = Some(Box::new(Smp::new(&mut *ret as *mut _)));
+        ret.dsp = Some(Dsp::new(&mut *ret as *mut _));
+        ret.reset();
+        ret
     }
 
     pub fn reset(&mut self) {

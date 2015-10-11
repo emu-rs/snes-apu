@@ -15,7 +15,6 @@ use emu_audio_types::audio_driver::{AudioDriver, RenderCallback};
 use emu_core_audio_driver::core_audio_driver::CoreAudioDriver;
 
 use snes_apu::apu::Apu;
-use snes_apu::smp::Smp;
 use snes_apu::spc::{Spc, Emulator};
 
 fn main() {
@@ -73,9 +72,6 @@ fn play_spc_file(file_name: &String) -> Result<()> {
     }
 
     let mut apu = Apu::new();
-    let smp = Smp::new(&mut apu as *mut _);
-    apu.set_smp(smp);
-    apu.reset();
 
     let mut driver = CoreAudioDriver::new();
     let mut phase: f64 = 0.0;
