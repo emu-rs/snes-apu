@@ -11,7 +11,7 @@ use std::io::{Result, Error, ErrorKind, Write, stdout, stdin};
 use std::thread;
 use std::sync::{Arc, Mutex};
 
-use emu_audio_types::audio_driver::{AudioDriver, RenderCallback};
+use emu_audio_types::audio_driver::AudioDriver;
 use emu_core_audio_driver::core_audio_driver::CoreAudioDriver;
 
 use snes_apu::apu::Apu;
@@ -74,7 +74,6 @@ fn play_spc_file(file_name: &String) -> Result<()> {
     let mut apu = Apu::new();
 
     let mut driver = CoreAudioDriver::new();
-    let mut phase: f64 = 0.0;
     driver.set_render_callback(Some(Box::new(move |buffer, num_frames| {
         // TODO: Proper buffers etc
         for i in 0..num_frames * 2 {
