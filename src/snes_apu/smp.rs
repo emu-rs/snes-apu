@@ -371,10 +371,9 @@ impl Smp {
         let mut addr = self.read_pc() as u16;
         addr |= (self.read_pc() as u16) << 8;
         let y = self.read(addr);
-        let mut reg_a = self.reg_a;
+        let reg_a = self.reg_a;
         self.set_psw_n_z((reg_a - y) as u32);
         self.read(addr);
-        reg_a = self.reg_a;
         self.write(addr, if x { y | reg_a } else { y & !reg_a });
     }
 
@@ -439,9 +438,8 @@ impl Smp {
         let mut addr = self.read(0xffde) as u16;
         addr |= (self.read(0xffdf) as u16) << 8;
         self.cycles(2);
-        let mut reg_pc = self.reg_pc;
+        let reg_pc = self.reg_pc;
         self.write_sp((reg_pc >> 8) as u8);
-        reg_pc = self.reg_pc;
         self.write_sp(reg_pc as u8);
         let psw = self.get_psw();
         self.write_sp(psw);
@@ -524,9 +522,8 @@ impl Smp {
     fn jsp_dp(&mut self) {
         let addr = self.read_pc();
         self.cycles(2);
-        let mut reg_pc = self.reg_pc;
+        let reg_pc = self.reg_pc;
         self.write_sp((reg_pc >> 8) as u8);
-        reg_pc = self.reg_pc;
         self.write_sp(reg_pc as u8);
         self.reg_pc = 0xff00 | (addr as u16);
     }
@@ -535,22 +532,20 @@ impl Smp {
         let mut addr = self.read_pc() as u16;
         addr |= (self.read_pc() as u16) << 8;
         self.cycles(3);
-        let mut reg_pc = self.reg_pc;
+        let reg_pc = self.reg_pc;
         self.write_sp((reg_pc >> 8) as u8);
-        reg_pc = self.reg_pc;
         self.write_sp(reg_pc as u8);
         self.reg_pc = addr;
     }
 
     fn jst(&mut self, opcode: u8) {
-        let mut addr = 0xffde - (((opcode as u16) >> 4) << 1);
+        let mut addr = 0xffde - (((opcode >> 4) << 1) as u16);
         let mut addr2 = self.read(addr) as u16;
         addr += 1;
         addr2 |= (self.read(addr) as u16) << 8;
         self.cycles(3);
-        let mut reg_pc = self.reg_pc;
+        let reg_pc = self.reg_pc;
         self.write_sp((reg_pc >> 8) as u8);
-        reg_pc = self.reg_pc;
         self.write_sp(reg_pc as u8);
         self.reg_pc = addr2;
     }
@@ -558,8 +553,8 @@ impl Smp {
     fn lda_i_x_inc(&mut self) {
         self.cycles(1);
         let reg_x = self.reg_x;
-        self.reg_x += 1;
         self.reg_a = self.read_dp(reg_x);
+        self.reg_x += 1;
         self.cycles(1);
         let reg_a = self.reg_a;
         self.set_psw_n_z(reg_a as u32);
@@ -625,9 +620,8 @@ impl Smp {
 
     fn sta_i_x(&mut self) {
         self.cycles(1);
-        let mut reg_x = self.reg_x;
+        let reg_x = self.reg_x;
         self.read_dp(reg_x);
-        reg_x = self.reg_x;
         let reg_a = self.reg_a;
         self.write_dp(reg_x, reg_a);
     }
@@ -635,9 +629,9 @@ impl Smp {
     fn sta_i_x_inc(&mut self) {
         self.cycles(2);
         let reg_x = self.reg_x;
-        self.reg_x += 1;
         let reg_a = self.reg_a;
         self.write_dp(reg_x, reg_a);
+        self.reg_x += 1;
     }
 
     fn stw_dp(&mut self) {
@@ -760,7 +754,7 @@ impl Smp {
                 let mut addr = self.read_pc();
                 let mut x = self.read_dp(addr) as u16;
                 addr += 1;
-                if $is_cpw {
+                if !$is_cpw {
                     self.cycles(1);
                 }
                 x |= (self.read_dp(addr) as u16) << 8;
@@ -791,7 +785,7 @@ impl Smp {
                 addr += 1;
                 addr2 |= (self.read_dp(addr) as u16) << 8;
                 let reg_y = self.reg_y;
-                let x = self.read(((addr2 as i16) + ((reg_y as i8) as i16)) as u16);
+                let x = self.read(addr2 + (reg_y as u16));
                 let reg_a = self.reg_a;
                 self.reg_a = self.$op(reg_a, x);
             })
@@ -821,7 +815,7 @@ impl Smp {
             ($x:expr, $y:expr, $is_dest_reg_sp:expr) => ({
                 self.cycles(1);
                 $y = $x;
-                if !$is_dest_reg_sp {
+                if $is_dest_reg_sp {
                     let temp = $y;
                     self.set_psw_n_z(temp as u32);
                 }
