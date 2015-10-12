@@ -815,7 +815,7 @@ impl Smp {
             ($x:expr, $y:expr, $is_dest_reg_sp:expr) => ({
                 self.cycles(1);
                 $y = $x;
-                if $is_dest_reg_sp {
+                if !$is_dest_reg_sp {
                     let temp = $y;
                     self.set_psw_n_z(temp as u32);
                 }
