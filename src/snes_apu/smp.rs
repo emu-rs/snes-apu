@@ -263,11 +263,11 @@ impl Smp {
     }
 
     fn cpw(&mut self, x: u16, y: u16) -> u16 {
-        let ret = (x as i32) - (y as i32);
-        self.psw_n = (ret & 0x8000) != 0;
-        self.psw_z = (ret as u16) == 0;
-        self.psw_c = ret >= 0;
-        ret as u16
+        let r = (x as i32) - (y as i32);
+        self.psw_n = (r & 0x8000) != 0;
+        self.psw_z = (r as u16) == 0;
+        self.psw_c = r >= 0;
+        x
     }
 
     fn ldw(&mut self, _: u16, y: u16) -> u16 {
