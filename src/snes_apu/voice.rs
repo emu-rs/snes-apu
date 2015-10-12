@@ -91,10 +91,10 @@ impl Voice {
 
         let p1 = self.sample_pos;
         let p2 = 0x1000 - p1;
-        let mut sample = if self.noise_on {
-            ((noise * 2) as i16) as i32
-        } else {
+        let mut sample = if !self.noise_on {
             dsp_helpers::clamp((self.current_sample * p2 + self.next_sample * p1) >> 12) & !1
+        } else {
+            ((noise * 2) as i16) as i32
         };
 
         self.envelope.tick();
