@@ -1,7 +1,6 @@
 #![feature(box_syntax)]
 
-extern crate emu_audio_types;
-extern crate emu_core_audio_driver;
+extern crate emu;
 
 mod snes_apu;
 
@@ -11,8 +10,8 @@ use std::io::{Result, Error, ErrorKind, Write, stdout, stdin};
 use std::thread;
 use std::sync::{Arc, Mutex};
 
-use emu_audio_types::audio_driver::AudioDriver;
-use emu_core_audio_driver::core_audio_driver::CoreAudioDriver;
+use emu::audio_driver::AudioDriver;
+use emu::core_audio_driver::CoreAudioDriver;
 
 use snes_apu::apu::{Apu, BUFFER_LEN};
 use snes_apu::spc::{Spc, Emulator};

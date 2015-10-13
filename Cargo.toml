@@ -3,8 +3,5 @@ name = "samurai-pizza-cats"
 version = "0.1.0"
 authors = ["ferris <jake@fusetools.com>"]
 
-[dependencies.emu-audio-types]
-path = "../emu/emu-audio-types"
-
-[dependencies.emu-core-audio-driver]
-path = "../emu/emu-core-audio-driver"
+[dependencies]
+emu = "0.1.0"
