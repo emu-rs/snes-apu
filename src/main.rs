@@ -76,10 +76,9 @@ fn play_spc_file(file_name: &String) -> Result<()> {
 
     let mut driver = CoreAudioDriver::new();
     driver.set_sample_rate(32000);
+    let mut left = [0; BUFFER_LEN];
+    let mut right = [0; BUFFER_LEN];
     driver.set_render_callback(Some(Box::new(move |buffer, num_frames| {
-        // TODO: Preallocate and reuse buffers
-        let mut left = [0; BUFFER_LEN];
-        let mut right = [0; BUFFER_LEN];
         apu.render(&mut left, &mut right, num_frames as i32);
         for i in 0..num_frames {
             let j = i * 2;
