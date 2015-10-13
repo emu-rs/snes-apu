@@ -32,7 +32,7 @@ Included in the `test` directory are a couple of test SPC files:
 
 ## Attribution
 Much of the core SMP code was baked from byuu's higan source code: http://byuu.org/emulation/higan/
-Linewise, some of the DSP code (envelopes in particular) was deep-fried from blargg's snes_spc code: http://blargg.8bitalley.com/libs/audio.html#snes_spc
+Likewise, some of the DSP code (envelopes in particular) was deep-fried from blargg's snes_spc code: http://blargg.8bitalley.com/libs/audio.html#snes_spc
 
 Without their awesome work, this project wouldn't exist!
 
