@@ -5,6 +5,7 @@ A Super Nintendo audio unit emulator.
 This is a highly-accurate emulator for the audio portion of the Super Nintendo.
 
 Included is an example that can play SPC files:
+
 `cargo run --release --example spc_player -- test/ferris-nu.spc test/smashit.spc`
 
 The audio unit is made up of a few major parts:
