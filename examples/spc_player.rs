@@ -1,8 +1,5 @@
-#![feature(box_syntax)]
-
 extern crate emu;
-
-mod snes_apu;
+extern crate snes_apu;
 
 use std::iter;
 use std::env;

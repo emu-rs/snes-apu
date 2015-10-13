@@ -1,3 +1,5 @@
+#![feature(box_syntax)]
+
 pub mod spc;
 pub mod apu;
 pub mod smp;

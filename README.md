@@ -1,12 +1,11 @@
-# samurai-pizza-cats
-A SNES APU emulator and WIP SPC player.
+# snes-apu
+A Super Nintendo audio unit emulator.
 
 ## Description
 This is a highly-accurate emulator for the audio portion of the Super Nintendo.
 
-The emulator core is wrapped up in a command-line driver that can play SPC files:
-
-`samurai-pizza-cats test/ferris-nu.spc`
+Included is an example that can play SPC files:
+`cargo run --release --example spc_player -- test/ferris-nu.spc test/smashit.spc`
 
 The audio unit is made up of a few major parts:
 - A CPU (SPC700 core), which is 100% cycle-accurate and _shouldn't_ contain any bugs (unless some slipped in during the port)
