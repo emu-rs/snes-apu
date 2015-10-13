@@ -1,4 +1,4 @@
-# snes-apu
+# snes-apu [![Crates.io](https://img.shields.io/crates/v/snes-apu.svg)](https://crates.io/crates/snes-apu) [![Crates.io](https://img.shields.io/crates/l/emu.svg)](https://github.com/emu-rs/snes-apu/blob/master/LICENSE)
 A Super Nintendo audio unit emulator.
 
 ## Description
