@@ -13,8 +13,8 @@ pub struct RingBuffer {
 impl RingBuffer {
     pub fn new() -> RingBuffer {
         RingBuffer {
-            left_buffer: box [0; BUFFER_LEN],
-            right_buffer: box [0; BUFFER_LEN],
+            left_buffer: Box::new([0; BUFFER_LEN]),
+            right_buffer: Box::new([0; BUFFER_LEN]),
             write_pos: 0,
             read_pos: 0,
             sample_count: 0

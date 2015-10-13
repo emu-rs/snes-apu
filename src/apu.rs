@@ -40,16 +40,16 @@ pub struct Apu {
 impl Apu {
     pub fn new() -> Box<Apu> {
         let mut ret = Box::new(Apu {
-            ram: box [0; RAM_LEN],
-            ipl_rom: box [0; IPL_ROM_LEN],
+            ram: Box::new([0; RAM_LEN]),
+            ipl_rom: Box::new([0; IPL_ROM_LEN]),
 
             smp: None,
             dsp: None,
 
             timers: [Timer::new(256), Timer::new(256), Timer::new(32)],
 
-            left_output_buffer: box [0; BUFFER_LEN],
-            right_output_buffer: box [0; BUFFER_LEN],
+            left_output_buffer: Box::new([0; BUFFER_LEN]),
+            right_output_buffer: Box::new([0; BUFFER_LEN]),
             overflow_buffer: Box::new(RingBuffer::new()),
 
             is_ipl_rom_enabled: true,
