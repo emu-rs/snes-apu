@@ -1,0 +1,17 @@
+language: rust
+rust:
+    - stable
+    - beta
+    - nightly
+matrix:
+    allow_failures:
+        - rust: beta
+        - rust: nightly
+notifications:
+    email:
+        - jake@fusetools.com
+os:
+    - osx # TODO: Should actually run on all OS' supported eventually (as emu properly supports them)
+before_script:
+    - rustc --version
+    - cargo --version
