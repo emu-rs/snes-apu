@@ -4,6 +4,9 @@ A Super Nintendo audio unit emulator.
 ## Description
 This is a highly-accurate emulator for the audio portion of the Super Nintendo.
 
+_Note: Due to current limitations in [the emu project](https://github.com/emu-rs/emu) on which this depends, this
+will only build on osx. Other platforms will be supported promptly._
+
 Included is an example that can play SPC files:
 
 `cargo run --release --example spc_player -- test/ferris-nu.spc test/smashit.spc`
