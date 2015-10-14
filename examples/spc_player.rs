@@ -1,4 +1,5 @@
 extern crate emu;
+extern crate spc;
 extern crate snes_apu;
 
 use std::iter;
@@ -10,8 +11,8 @@ use std::sync::{Arc, Mutex};
 use emu::audio_driver::AudioDriver;
 use emu::core_audio_driver::CoreAudioDriver;
 
+use spc::spc::{Spc, Emulator};
 use snes_apu::apu::{Apu, BUFFER_LEN};
-use snes_apu::spc::{Spc, Emulator};
 
 fn main() {
     if let Err(e) = play_spc_files() {

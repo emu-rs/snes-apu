@@ -2,7 +2,7 @@ use super::smp::Smp;
 use super::dsp::dsp::Dsp;
 use super::timer::Timer;
 use super::ring_buffer::RingBuffer;
-use super::spc::Spc;
+use super::spc::spc::Spc;
 
 pub const RAM_LEN: usize = 0x10000;
 

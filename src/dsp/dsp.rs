@@ -5,7 +5,7 @@ use std::mem;
 use super::super::apu::Apu;
 use super::voice::Voice;
 use super::filter::Filter;
-use super::super::spc::Spc;
+use super::super::spc::spc::Spc;
 use super::dsp_helpers;
 
 const NUM_VOICES: usize = 8;
