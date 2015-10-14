@@ -170,9 +170,9 @@ impl Id666Tag {
 
         let default_channel_disables = try!(r.read_u8());
 
-        let dumping_emulator = match try!(Id666Tag::read_digit(r)) {
-            1 => Emulator::ZSnes,
-            2 => Emulator::Snes9x,
+        let dumping_emulator = match Id666Tag::read_digit(r) {
+            Ok(1) => Emulator::ZSnes,
+            Ok(2) => Emulator::Snes9x,
             _ => Emulator::Unknown
         };
 
