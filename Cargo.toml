@@ -5,6 +5,7 @@ authors = ["ferris <jake@fusetools.com>"]
 description = "A Super Nintendo audio unit emulator."
 homepage = "https://github.com/emu-rs/snes-apu"
 repository = "https://github.com/emu-rs/snes-apu"
+keywords = ["snes", "super", "nintendo", "apu", "audio", "spc", "emu", "emulator", "emulation"]
 license = "BSD-2-Clause"
 
 [dependencies]
