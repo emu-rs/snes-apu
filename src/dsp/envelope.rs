@@ -63,7 +63,7 @@ impl Envelope {
                 self.level = env;
             },
             _ => {
-                let mut rate: i32 = 0;
+                let rate: i32;
                 let env_data = self.adsr1 as i32;
                 if (self.adsr0 & 0x80) != 0 {
                     // Adsr mode

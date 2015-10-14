@@ -52,10 +52,6 @@ impl Timer {
         self.is_running = value;
     }
 
-    pub fn get_start_stop_bit(&self) -> bool {
-        self.is_running
-    }
-
     pub fn set_target(&mut self, value: u8) {
         self.target = match value {
             0 => None,

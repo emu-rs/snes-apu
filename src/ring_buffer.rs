@@ -21,14 +21,6 @@ impl RingBuffer {
         }
     }
 
-    pub fn set_write_pos(&mut self, pos: i32) {
-        self.write_pos = pos % (BUFFER_LEN as i32);
-    }
-
-    pub fn set_read_pos(&mut self, pos: i32) {
-        self.read_pos = pos % (BUFFER_LEN as i32);
-    }
-
     pub fn write(&mut self, left: &[i16], right: &[i16], num_samples: i32) {
         for i in 0..num_samples {
             self.left_buffer[self.write_pos as usize] = left[i as usize];

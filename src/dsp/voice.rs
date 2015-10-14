@@ -128,10 +128,6 @@ impl Voice {
         }
     }
 
-    pub fn get_pitch_high(&self) -> u8 {
-        self.pitch_high
-    }
-
     pub fn set_pitch_high(&mut self, value: u8) {
         self.pitch_high = value & 0x3f;
     }
