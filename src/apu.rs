@@ -2,11 +2,8 @@ use super::smp::Smp;
 use super::dsp::dsp::Dsp;
 use super::timer::Timer;
 use super::ring_buffer::RingBuffer;
-use super::spc::spc::Spc;
+use super::spc::spc::{Spc, RAM_LEN, IPL_ROM_LEN};
 
-pub const RAM_LEN: usize = 0x10000;
-
-pub const IPL_ROM_LEN: usize = 64;
 static DEFAULT_IPL_ROM: [u8; IPL_ROM_LEN] = [
     0xcd, 0xef, 0xbd, 0xe8, 0x00, 0xc6, 0x1d, 0xd0,
     0xfc, 0x8f, 0xaa, 0xf4, 0x8f, 0xbb, 0xf5, 0x78,
@@ -156,10 +153,10 @@ impl Apu {
     pub fn set_state(&mut self, spc: &Spc) {
         self.reset();
 
-        for i in 0..0x10000 {
+        for i in 0..RAM_LEN {
             self.ram[i] = spc.ram[i];
         }
-        for i in 0..64 {
+        for i in 0..IPL_ROM_LEN {
             self.ipl_rom[i] = spc.ipl_rom[i];
         }
 

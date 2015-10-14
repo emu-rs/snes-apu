@@ -5,7 +5,7 @@ use std::mem;
 use super::super::apu::Apu;
 use super::voice::Voice;
 use super::filter::Filter;
-use super::super::spc::spc::Spc;
+use super::super::spc::spc::{Spc, REG_LEN};
 use super::dsp_helpers;
 
 const NUM_VOICES: usize = 8;
@@ -138,10 +138,10 @@ impl Dsp {
     }
 
     pub fn set_state(&mut self, spc: &Spc) {
-        for i in 0..0x80 {
+        for i in 0..REG_LEN {
             match i {
                 0x4c | 0x5c => (), // Do nothing
-                _ => { self.set_register(i, spc.regs[i as usize]); }
+                _ => { self.set_register(i as u8, spc.regs[i as usize]); }
             }
         }
 
