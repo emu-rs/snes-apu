@@ -2,10 +2,10 @@ use std::mem;
 
 // TODO: This is a placeholder before I start generalizing traits
 // from the old code.
-use super::apu::Apu;
+use super::super::apu::Apu;
 use super::voice::Voice;
 use super::filter::Filter;
-use super::spc::Spc;
+use super::super::spc::Spc;
 use super::dsp_helpers;
 
 const NUM_VOICES: usize = 8;

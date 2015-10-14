@@ -1,5 +1,5 @@
 use super::smp::Smp;
-use super::dsp::Dsp;
+use super::dsp::dsp::Dsp;
 use super::timer::Timer;
 use super::ring_buffer::RingBuffer;
 use super::spc::Spc;

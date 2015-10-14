@@ -1,7 +1,7 @@
 use super::dsp::Dsp;
 // TODO: This is a placeholder before I start generalizing traits
 // from the old code.
-use super::apu::Apu;
+use super::super::apu::Apu;
 use super::envelope::Envelope;
 use super::brr_block_decoder::BrrBlockDecoder;
 use super::dsp_helpers;
@@ -89,9 +89,9 @@ impl Voice {
             pitch = 0x3fff;
         }
 
-        let p1 = self.sample_pos;
-        let p2 = 0x1000 - p1;
         let mut sample = if !self.noise_on {
+            let p1 = self.sample_pos;
+            let p2 = 0x1000 - p1;
             dsp_helpers::clamp((self.current_sample * p2 + self.next_sample * p1) >> 12) & !1
         } else {
             ((noise * 2) as i16) as i32
