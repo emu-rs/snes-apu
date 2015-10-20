@@ -23,7 +23,7 @@ static COUNTER_OFFSETS: [i32; 32] = [
 pub struct Dsp {
     emulator: *mut Apu,
 
-    voices: Vec<Box<Voice>>,
+    pub voices: Vec<Box<Voice>>,
 
     left_filter: Box<Filter>,
     right_filter: Box<Filter>,
