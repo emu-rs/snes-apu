@@ -21,10 +21,9 @@ pub struct Envelope {
 
 impl Envelope {
     pub fn new(dsp: *mut Dsp) -> Envelope {
-        Envelope {
+        let mut ret = Envelope {
             dsp: dsp,
 
-            // TODO: Correct initial values for adsr0, adsr1, gain
             adsr0: 0,
             adsr1: 0,
             gain: 0,
@@ -32,7 +31,9 @@ impl Envelope {
             mode: Mode::Release,
             level: 0,
             hidden_level: 0
-        }
+        };
+        ret.reset();
+        ret
     }
 
     #[inline]
@@ -40,6 +41,17 @@ impl Envelope {
         unsafe {
             &mut (*self.dsp)
         }
+    }
+
+    pub fn reset(&mut self) {
+        // TODO: Correct initial values for adsr0, adsr1, gain
+        self.adsr0 = 0;
+        self.adsr1 = 0;
+        self.gain = 0;
+
+        self.mode = Mode::Release;
+        self.level = 0;
+        self.hidden_level = 0;
     }
 
     pub fn key_on(&mut self) {

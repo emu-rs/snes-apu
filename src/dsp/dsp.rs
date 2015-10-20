@@ -107,6 +107,10 @@ impl Dsp {
     }
 
     pub fn reset(&mut self) {
+        for voice in self.voices.iter_mut() {
+            voice.reset();
+        }
+
         // TODO: NO idea if some of these are correct
         self.vol_left = 0x89;
         self.vol_right = 0x9c;

@@ -38,7 +38,7 @@ pub struct Voice {
 
 impl Voice {
     pub fn new(dsp: *mut Dsp, emulator: *mut Apu) -> Voice {
-        Voice {
+        let mut ret = Voice {
             dsp: dsp,
             emulator: emulator,
 
@@ -47,7 +47,7 @@ impl Voice {
             vol_left: 0,
             vol_right: 0,
             pitch_low: 0,
-            pitch_high: 0x10,
+            pitch_high: 0,
             source: 0,
             pitch_mod: false,
             noise_on: false,
@@ -60,7 +60,9 @@ impl Voice {
             sample_pos: 0,
             current_sample: 0,
             next_sample: 0
-        }
+        };
+        ret.reset();
+        ret
     }
 
     #[inline]
@@ -75,6 +77,26 @@ impl Voice {
         unsafe {
             &mut (*self.emulator)
         }
+    }
+
+    pub fn reset(&mut self) {
+        self.envelope.reset();
+
+        self.vol_left = 0;
+        self.vol_right = 0;
+        self.pitch_low = 0;
+        self.pitch_high = 0x10;
+        self.source = 0;
+        self.pitch_mod = false;
+        self.noise_on = false;
+
+        self.sample_start_address = 0;
+        self.loop_start_address = 0;
+        self.brr_block_decoder.reset(0, 0);
+        self.sample_address = 0;
+        self.sample_pos = 0;
+        self.current_sample = 0;
+        self.next_sample = 0;
     }
 
     pub fn render_sample(&mut self, last_voice_out: i32, noise: i32) -> VoiceOutput {
