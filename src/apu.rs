@@ -173,6 +173,14 @@ impl Apu {
         }
     }
 
+    pub fn get_ram_snapshot(&mut self) -> Box<[u8; RAM_LEN]> {
+        let mut ret = Box::new([0; RAM_LEN]);
+        for i in 0..RAM_LEN {
+            ret[i] = self.read_u8(i as u32);
+        }
+        ret
+    }
+
     fn set_test_reg(&self, value: u8) {
         let _ = value;
         panic!("Test reg not yet implemented");
