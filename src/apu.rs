@@ -182,6 +182,19 @@ impl Apu {
         self.dsp_reg_address = self.ram[0xf2];
     }
 
+    pub fn clear_echo_buffer(&mut self) {
+        if let Some(ref mut dsp) = self.dsp {
+            let length = dsp.calculate_echo_length();
+            let mut end_addr = dsp.get_echo_start_address() as i32 + length;
+            if end_addr > RAM_LEN as i32 {
+                end_addr = RAM_LEN as i32;
+            }
+            for i in dsp.get_echo_start_address() as i32..end_addr {
+                self.ram[i as usize] = 0xff;
+            }
+        }
+    }
+
     fn set_test_reg(&self, value: u8) {
         // TODO
         let _ = value;

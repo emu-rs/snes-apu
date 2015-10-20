@@ -158,6 +158,14 @@ impl Dsp {
         self.cycles_since_last_flush += num_cycles;
     }
 
+    pub fn get_echo_start_address(&self) -> u16 {
+        self.echo_start_address
+    }
+
+    pub fn calculate_echo_length(&self) -> i32 {
+        (self.echo_delay as i32) * 0x800
+    }
+
     pub fn flush(&mut self) {
         self.is_flushing = true;
 
@@ -189,9 +197,9 @@ impl Dsp {
             left_out = dsp_helpers::multiply_volume(left_out, self.vol_left);
             right_out = dsp_helpers::multiply_volume(right_out, self.vol_right);
 
-            let echo_read_address = (self.echo_start_address as u32) + (self.echo_pos as u32);
-            let mut left_echo_in = (((((self.emulator().read_u8(echo_read_address + 1) as i32) << 8) | (self.emulator().read_u8(echo_read_address) as i32)) as i16) & !1) as i32;
-            let mut right_echo_in = (((((self.emulator().read_u8(echo_read_address + 3) as i32) << 8) | (self.emulator().read_u8(echo_read_address + 2) as i32)) as i16) & !1) as i32;
+            let echo_address = (self.echo_start_address + (self.echo_pos as u16)) as u32;
+            let mut left_echo_in = (((((self.emulator().read_u8(echo_address + 1) as i32) << 8) | (self.emulator().read_u8(echo_address) as i32)) as i16) & !1) as i32;
+            let mut right_echo_in = (((((self.emulator().read_u8(echo_address + 3) as i32) << 8) | (self.emulator().read_u8(echo_address + 2) as i32)) as i16) & !1) as i32;
 
             left_echo_in = dsp_helpers::clamp(self.left_filter.next(left_echo_in));
             right_echo_in = dsp_helpers::clamp(self.right_filter.next(right_echo_in));
@@ -208,14 +216,13 @@ impl Dsp {
                 left_echo_out = dsp_helpers::clamp(left_echo_out + ((((left_echo_in * ((self.echo_feedback as i8) as i32)) >> 7) as i16) as i32)) & !1;
                 right_echo_out = dsp_helpers::clamp(right_echo_out + ((((right_echo_in * ((self.echo_feedback as i8) as i32)) >> 7) as i16) as i32)) & !1;
 
-                let echo_write_address = (self.echo_start_address as u32) + (self.echo_pos as u32);
-                self.emulator().write_u8(echo_write_address + 0, left_echo_out as u8);
-                self.emulator().write_u8(echo_write_address + 1, (left_echo_out >> 8) as u8);
-                self.emulator().write_u8(echo_write_address + 2, right_echo_out as u8);
-                self.emulator().write_u8(echo_write_address + 3, (right_echo_out >> 8) as u8);
+                self.emulator().write_u8(echo_address + 0, left_echo_out as u8);
+                self.emulator().write_u8(echo_address + 1, (left_echo_out >> 8) as u8);
+                self.emulator().write_u8(echo_address + 2, right_echo_out as u8);
+                self.emulator().write_u8(echo_address + 3, (right_echo_out >> 8) as u8);
             }
             if self.echo_pos == 0 {
-                self.echo_length = (self.echo_delay as i32) * 0x800;
+                self.echo_length = self.calculate_echo_length();
             }
             self.echo_pos += 4;
             if self.echo_pos >= self.echo_length {

@@ -70,6 +70,10 @@ fn play_spc_file(file_name: &String) -> Result<()> {
 
     let mut apu = Apu::new();
     apu.set_state(&spc);
+    // Most SPC's have crap in the echo buffer on startup, so while it's not technically correct, we'll clear that.
+    // The example for blargg's APU emulator (which is known to be the most accurate there is) also does this, so I
+    //  think we're OK to do it too :)
+    apu.clear_echo_buffer();
 
     let mut driver = CoreAudioDriver::new();
     driver.set_sample_rate(32000);
