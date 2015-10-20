@@ -66,12 +66,8 @@ impl Apu {
             self.ipl_rom[i] = DEFAULT_IPL_ROM[i];
         }
 
-        if let Some(ref mut smp) = self.smp {
-            smp.reset();
-        }
-        if let Some(ref mut dsp) = self.dsp {
-            dsp.reset();
-        }
+        self.smp.as_mut().unwrap().reset();
+        self.dsp.as_mut().unwrap().reset();
         for timer in self.timers.iter_mut() {
             timer.reset();
         }
@@ -81,24 +77,20 @@ impl Apu {
     }
 
     pub fn render(&mut self, left_buffer: &mut [i16], right_buffer: &mut [i16], num_samples: i32) {
-        if let Some(ref mut smp) = self.smp {
-            if let Some(ref mut dsp) = self.dsp {
-                while self.overflow_buffer.get_sample_count() < num_samples {
-                    dsp.set_output_buffers(&mut *self.left_output_buffer as *mut _, &mut *self.right_output_buffer as *mut _);
-                    smp.run(num_samples * 64);
-                    dsp.flush();
-                    self.overflow_buffer.write(&mut *self.left_output_buffer, &mut *self.right_output_buffer, dsp.output_index);
-                }
-            }
-
-            self.overflow_buffer.read(left_buffer, right_buffer, num_samples);
+        let smp = self.smp.as_mut().unwrap();
+        let dsp = self.dsp.as_mut().unwrap();
+        while self.overflow_buffer.get_sample_count() < num_samples {
+            dsp.set_output_buffers(&mut *self.left_output_buffer as *mut _, &mut *self.right_output_buffer as *mut _);
+            smp.run(num_samples * 64);
+            dsp.flush();
+            self.overflow_buffer.write(&mut *self.left_output_buffer, &mut *self.right_output_buffer, dsp.output_index);
         }
+
+        self.overflow_buffer.read(left_buffer, right_buffer, num_samples);
     }
 
     pub fn cpu_cycles_callback(&mut self, num_cycles: i32) {
-        if let Some(ref mut dsp) = self.dsp {
-            dsp.cycles_callback(num_cycles);
-        }
+        self.dsp.as_mut().unwrap().cycles_callback(num_cycles);
         for timer in self.timers.iter_mut() {
             timer.cpu_cycles_callback(num_cycles);
         }
@@ -111,7 +103,7 @@ impl Apu {
                 0xf0 | 0xf1 => 0,
 
                 0xf2 => self.dsp_reg_address,
-                0xf3 => if let Some(ref mut dsp) = self.dsp { dsp.get_register(self.dsp_reg_address) } else { 0 },
+                0xf3 => self.dsp.as_mut().unwrap().get_register(self.dsp_reg_address),
 
                 0xfa ... 0xfc => 0,
 
@@ -135,7 +127,7 @@ impl Apu {
                 0xf0 => { self.set_test_reg(value); },
                 0xf1 => { self.set_control_reg(value); },
                 0xf2 => { self.dsp_reg_address = value; },
-                0xf3 => { if let Some(ref mut dsp) = self.dsp { dsp.set_register(self.dsp_reg_address, value); } },
+                0xf3 => { self.dsp.as_mut().unwrap().set_register(self.dsp_reg_address, value); },
 
                 0xf4 ... 0xf9 => { self.ram[address as usize] = value; },
 
@@ -160,7 +152,8 @@ impl Apu {
             self.ipl_rom[i] = spc.ipl_rom[i];
         }
 
-        if let Some(ref mut smp) = self.smp {
+        {
+            let smp = self.smp.as_mut().unwrap();
             smp.reg_pc = spc.pc;
             smp.reg_a = spc.a;
             smp.reg_x = spc.x;
@@ -169,9 +162,7 @@ impl Apu {
             smp.reg_sp = spc.sp;
         }
 
-        if let Some(ref mut dsp) = self.dsp {
-            dsp.set_state(spc);
-        }
+        self.dsp.as_mut().unwrap().set_state(spc);
 
         for i in 0..3 {
             self.timers[i].set_target(self.ram[0xfa + i]);
@@ -183,15 +174,14 @@ impl Apu {
     }
 
     pub fn clear_echo_buffer(&mut self) {
-        if let Some(ref mut dsp) = self.dsp {
-            let length = dsp.calculate_echo_length();
-            let mut end_addr = dsp.get_echo_start_address() as i32 + length;
-            if end_addr > RAM_LEN as i32 {
-                end_addr = RAM_LEN as i32;
-            }
-            for i in dsp.get_echo_start_address() as i32..end_addr {
-                self.ram[i as usize] = 0xff;
-            }
+        let dsp = self.dsp.as_mut().unwrap();
+        let length = dsp.calculate_echo_length();
+        let mut end_addr = dsp.get_echo_start_address() as i32 + length;
+        if end_addr > RAM_LEN as i32 {
+            end_addr = RAM_LEN as i32;
+        }
+        for i in dsp.get_echo_start_address() as i32..end_addr {
+            self.ram[i as usize] = 0xff;
         }
     }
 
