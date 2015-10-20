@@ -17,8 +17,8 @@ pub struct Apu {
     ram: Box<[u8; RAM_LEN]>,
     ipl_rom: Box<[u8; IPL_ROM_LEN]>,
 
-    smp: Option<Box<Smp>>,
-    dsp: Option<Box<Dsp>>,
+    pub smp: Option<Box<Smp>>,
+    pub dsp: Option<Box<Dsp>>,
 
     timers: [Timer; 3],
 
@@ -171,14 +171,6 @@ impl Apu {
         for i in dsp.get_echo_start_address() as i32..end_addr {
             self.ram[i as usize] = 0xff;
         }
-    }
-
-    pub fn get_ram_snapshot(&mut self) -> Box<[u8; RAM_LEN]> {
-        let mut ret = Box::new([0; RAM_LEN]);
-        for i in 0..RAM_LEN {
-            ret[i] = self.read_u8(i as u32);
-        }
-        ret
     }
 
     fn set_test_reg(&self, value: u8) {
