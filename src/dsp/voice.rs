@@ -31,7 +31,9 @@ pub struct Voice {
     sample_address: u32,
     sample_pos: i32,
     current_sample: i32,
-    next_sample: i32
+    next_sample: i32,
+
+    pub is_muted: bool
 }
 
 impl Voice {
@@ -57,7 +59,9 @@ impl Voice {
             sample_address: 0,
             sample_pos: 0,
             current_sample: 0,
-            next_sample: 0
+            next_sample: 0,
+
+            is_muted: false
         };
         ret.reset();
         ret
@@ -95,6 +99,8 @@ impl Voice {
         self.sample_pos = 0;
         self.current_sample = 0;
         self.next_sample = 0;
+
+        self.is_muted = false;
     }
 
     pub fn render_sample(&mut self, last_voice_out: i32, noise: i32) -> VoiceOutput {
@@ -141,10 +147,18 @@ impl Voice {
             }
         }
 
-        VoiceOutput {
-            left_out: dsp_helpers::multiply_volume(sample, self.vol_left),
-            right_out: dsp_helpers::multiply_volume(sample, self.vol_right),
-            last_voice_out: sample
+        if !self.is_muted {
+            VoiceOutput {
+                left_out: dsp_helpers::multiply_volume(sample, self.vol_left),
+                right_out: dsp_helpers::multiply_volume(sample, self.vol_right),
+                last_voice_out: sample
+            }
+        } else {
+            VoiceOutput {
+                left_out: 0,
+                right_out: 0,
+                last_voice_out: 0
+            }
         }
     }
 
