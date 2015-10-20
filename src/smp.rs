@@ -1,16 +1,12 @@
 // TODO: This will panic on certain opcodes. The ideas I have for cpu_lang
 // will probably fix it; we'll see. For now tho, I'm gonna leave it as-is;
 // I can imagine fixing it trivially might lead to performance problems.
-// Another issue I foresee is many of the opcodes assume the host architecture
-// is little-endian, which won't always be the case. I'm not yet sure how
-// to handle that.
 // As for integer wrapping checks in some configs in Rust, that problem
 // is basically ignored for the time being. Release builds shouldn't
 // have those checks, so using that shouldn't be a problem, but it does
 // mean debug builds are basically useless for now.
 // Finally there's a lot of duplication, particularly when opcodes are
 // reading/writing 16-bit values. This can be greatly improved.
-// I'll deal with these problems after the port is finished.
 
 // TODO: This is a placeholder before I start generalizing traits
 // from the old code.
