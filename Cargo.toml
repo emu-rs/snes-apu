@@ -9,5 +9,5 @@ keywords = ["snes", "super", "nintendo", "spc", "emulator"]
 license = "BSD-2-Clause"
 
 [dependencies]
-emu = "0.1.0"
+emu = "0.1.1"
 spc = "0.1.0"
