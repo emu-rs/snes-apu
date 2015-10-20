@@ -9,7 +9,7 @@ use std::thread;
 use std::sync::{Arc, Mutex};
 
 use emu::audio_driver::AudioDriver;
-use emu::core_audio_driver::CoreAudioDriver;
+use emu::audio_driver_factory;
 
 use spc::spc::{Spc, Emulator};
 use snes_apu::apu::Apu;
@@ -76,7 +76,7 @@ fn play_spc_file(file_name: &String) -> Result<()> {
     //  think we're OK to do it too :)
     apu.clear_echo_buffer();
 
-    let mut driver = CoreAudioDriver::new();
+    let mut driver = audio_driver_factory::create_default();
     driver.set_sample_rate(SAMPLE_RATE as i32);
     let mut left = [0; BUFFER_LEN];
     let mut right = [0; BUFFER_LEN];
