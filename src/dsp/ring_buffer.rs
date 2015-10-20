@@ -1,6 +1,6 @@
 // TODO: This should really be a generic parameter on RingBuffer,
 // but rust does not currently have any facilities for this.
-use super::apu::BUFFER_LEN;
+use super::dsp::BUFFER_LEN;
 
 pub struct RingBuffer {
     left_buffer: Box<[i16; BUFFER_LEN]>,
@@ -21,13 +21,21 @@ impl RingBuffer {
         }
     }
 
-    pub fn write(&mut self, left: &[i16], right: &[i16], num_samples: i32) {
-        for i in 0..num_samples {
-            self.left_buffer[self.write_pos as usize] = left[i as usize];
-            self.right_buffer[self.write_pos as usize] = right[i as usize];
-            self.write_pos = (self.write_pos + 1) % (BUFFER_LEN as i32);
+    pub fn reset(&mut self) {
+        for i in 0..BUFFER_LEN {
+            self.left_buffer[i] = 0;
+            self.right_buffer[i] = 0;
         }
-        self.sample_count += num_samples;
+        self.write_pos = 0;
+        self.read_pos = 0;
+        self.sample_count = 0;
+    }
+
+    pub fn write_sample(&mut self, left: i16, right: i16) {
+        self.left_buffer[self.write_pos as usize] = left;
+        self.right_buffer[self.write_pos as usize] = right;
+        self.write_pos = (self.write_pos + 1) % (BUFFER_LEN as i32);
+        self.sample_count += 1;
     }
 
     pub fn read(&mut self, left: &mut [i16], right: &mut [i16], num_samples: i32) {

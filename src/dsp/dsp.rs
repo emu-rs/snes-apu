@@ -1,12 +1,14 @@
-use std::mem;
-
 // TODO: This is a placeholder before I start generalizing traits
 // from the old code.
 use super::super::apu::Apu;
 use super::voice::Voice;
 use super::filter::Filter;
+use super::ring_buffer::RingBuffer;
 use super::super::spc::spc::{Spc, REG_LEN};
 use super::dsp_helpers;
+
+pub const SAMPLE_RATE: usize = 32000;
+pub const BUFFER_LEN: usize = SAMPLE_RATE * 2;
 
 const NUM_VOICES: usize = 8;
 
@@ -27,11 +29,7 @@ pub struct Dsp {
 
     left_filter: Box<Filter>,
     right_filter: Box<Filter>,
-
-    // TODO: Unsafe is icky :)
-    left_output_buffer: *mut [i16],
-    right_output_buffer: *mut [i16],
-    pub output_index: i32,
+    pub output_buffer: Box<RingBuffer>,
 
     vol_left: u8,
     vol_right: u8,
@@ -62,10 +60,7 @@ impl Dsp {
 
             left_filter: Box::new(Filter::new()),
             right_filter: Box::new(Filter::new()),
-
-            left_output_buffer: unsafe { mem::uninitialized() },
-            right_output_buffer: unsafe { mem::uninitialized() },
-            output_index: 0,
+            output_buffer: Box::new(RingBuffer::new()),
 
             vol_left: 0,
             vol_right: 0,
@@ -111,6 +106,10 @@ impl Dsp {
             voice.reset();
         }
 
+        self.left_filter.reset();
+        self.right_filter.reset();
+        self.output_buffer.reset();
+
         // TODO: NO idea if some of these are correct
         self.vol_left = 0x89;
         self.vol_right = 0x9c;
@@ -150,12 +149,6 @@ impl Dsp {
         }
 
         self.set_kon(spc.regs[0x4c]);
-    }
-
-    pub fn set_output_buffers(&mut self, left_buffer: *mut [i16], right_buffer: *mut [i16]) {
-        self.left_output_buffer = left_buffer;
-        self.right_output_buffer = right_buffer;
-        self.output_index = 0;
     }
 
     pub fn cycles_callback(&mut self, num_cycles: i32) {
@@ -208,13 +201,9 @@ impl Dsp {
             left_echo_in = dsp_helpers::clamp(self.left_filter.next(left_echo_in));
             right_echo_in = dsp_helpers::clamp(self.right_filter.next(right_echo_in));
 
-            unsafe {
-                let left_output_array = &mut (*self.left_output_buffer) as &mut [i16];
-                let right_output_array = &mut (*self.right_output_buffer) as &mut [i16];
-                left_output_array[self.output_index as usize] = dsp_helpers::clamp(left_out + dsp_helpers::multiply_volume(left_echo_in, self.echo_vol_left)) as i16;
-                right_output_array[self.output_index as usize] = dsp_helpers::clamp(right_out + dsp_helpers::multiply_volume(right_echo_in, self.echo_vol_right)) as i16;
-            }
-            self.output_index += 1;
+            let left_out = dsp_helpers::clamp(left_out + dsp_helpers::multiply_volume(left_echo_in, self.echo_vol_left)) as i16;
+            let right_out = dsp_helpers::clamp(right_out + dsp_helpers::multiply_volume(right_echo_in, self.echo_vol_right)) as i16;
+            self.output_buffer.write_sample(left_out, right_out);
 
             if self.echo_write_enabled {
                 left_echo_out = dsp_helpers::clamp(left_echo_out + ((((left_echo_in * ((self.echo_feedback as i8) as i32)) >> 7) as i16) as i32)) & !1;

@@ -17,6 +17,15 @@ impl Filter {
         }
     }
 
+    pub fn reset(&mut self) {
+        for i in 0..NUM_TAPS {
+            self.coefficients[i] = 0;
+
+            self.buffer[i] = 0;
+        }
+        self.buffer_pos = 0;
+    }
+
     pub fn next(&mut self, value: i32) -> i32 {
         self.buffer[self.buffer_pos as usize] = value;
 

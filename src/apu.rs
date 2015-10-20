@@ -1,7 +1,6 @@
 use super::smp::Smp;
 use super::dsp::dsp::Dsp;
 use super::timer::Timer;
-use super::ring_buffer::RingBuffer;
 use super::spc::spc::{Spc, RAM_LEN, IPL_ROM_LEN};
 
 static DEFAULT_IPL_ROM: [u8; IPL_ROM_LEN] = [
@@ -14,9 +13,6 @@ static DEFAULT_IPL_ROM: [u8; IPL_ROM_LEN] = [
     0xf6, 0xda, 0x00, 0xba, 0xf4, 0xc4, 0xf4, 0xdd,
     0x5d, 0xd0, 0xdb, 0x1f, 0x00, 0x00, 0xc0, 0xff];
 
-const SAMPLE_RATE: usize = 32000;
-pub const BUFFER_LEN: usize = SAMPLE_RATE * 2;
-
 pub struct Apu {
     ram: Box<[u8; RAM_LEN]>,
     ipl_rom: Box<[u8; IPL_ROM_LEN]>,
@@ -25,10 +21,6 @@ pub struct Apu {
     dsp: Option<Box<Dsp>>,
 
     timers: [Timer; 3],
-
-    left_output_buffer: Box<[i16; BUFFER_LEN]>,
-    right_output_buffer: Box<[i16; BUFFER_LEN]>,
-    overflow_buffer: Box<RingBuffer>,
 
     is_ipl_rom_enabled: bool,
     dsp_reg_address: u8
@@ -44,10 +36,6 @@ impl Apu {
             dsp: None,
 
             timers: [Timer::new(256), Timer::new(256), Timer::new(32)],
-
-            left_output_buffer: Box::new([0; BUFFER_LEN]),
-            right_output_buffer: Box::new([0; BUFFER_LEN]),
-            overflow_buffer: Box::new(RingBuffer::new()),
 
             is_ipl_rom_enabled: true,
             dsp_reg_address: 0
@@ -79,14 +67,12 @@ impl Apu {
     pub fn render(&mut self, left_buffer: &mut [i16], right_buffer: &mut [i16], num_samples: i32) {
         let smp = self.smp.as_mut().unwrap();
         let dsp = self.dsp.as_mut().unwrap();
-        while self.overflow_buffer.get_sample_count() < num_samples {
-            dsp.set_output_buffers(&mut *self.left_output_buffer as *mut _, &mut *self.right_output_buffer as *mut _);
+        while dsp.output_buffer.get_sample_count() < num_samples {
             smp.run(num_samples * 64);
             dsp.flush();
-            self.overflow_buffer.write(&mut *self.left_output_buffer, &mut *self.right_output_buffer, dsp.output_index);
         }
 
-        self.overflow_buffer.read(left_buffer, right_buffer, num_samples);
+        dsp.output_buffer.read(left_buffer, right_buffer, num_samples);
     }
 
     pub fn cpu_cycles_callback(&mut self, num_cycles: i32) {
