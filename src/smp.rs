@@ -166,7 +166,7 @@ impl Smp {
         self.psw_h = ((x ^ y ^ r) & 0x10) != 0;
         self.psw_z = (r as u8) == 0;
         self.psw_c = r > 0xff;
-        (r & 0xff) as u8
+        r as u8
     }
 
     fn and(&mut self, x: u8, y: u8) -> u8 {
