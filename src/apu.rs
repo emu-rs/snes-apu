@@ -97,7 +97,7 @@ impl Apu {
                 0xfe => self.timers[1].read_counter(),
                 0xff => self.timers[2].read_counter(),
 
-                _ => 0
+                _ => self.ram[address as usize]
             }
         } else if address >= 0xffc0 && self.is_ipl_rom_enabled {
             self.ipl_rom[(address - 0xffc0) as usize]
