@@ -12,19 +12,22 @@ Included is an example that can play SPC files:
 `cargo run --release --example spc_player -- test/ferris-nu.spc test/smashit.spc`
 
 The audio unit is made up of a few major parts:
-- A CPU (SPC700 core), which is 100% cycle-accurate and _shouldn't_ contain any bugs (unless some slipped in during the port)
+- A CPU (SPC700 core), which is 100% cycle-accurate
 - A DSP, which is accurate to the nearest audio sample
 - 64kb RAM
-- 3 timers, which are 100% accurate
-- And some extra glue here and there :)
+- 3 timers
+- And some extra glue here and there to tie it all together :)
 
 [Originally written in C++](https://github.com/yupferris/SamuraiPizzaCats), this emulator serves as a pilot for [porting all of my
 emulator infrastructure to Rust](https://github.com/emu-rs/emu), and it's been a rather successful project thus far.
 
 ## Shortcomings
-Currently, the code uses some unsafe code in a few places for internal mutability without runtime checks. Proper wrapping types
-are also not currently used, so the emu can only run properly if built in the release config. Both of these issues will be addressed
-at some point.
+While the emulation itself is highly-accurate (no known bugs minus some things that aren't implemented fully, such as DSP register reads
+and startup state), and the vast majority of the code can be considered idiomatic Rust code (to the best of my knowledge), there are some
+small remaining "cosmetic issues" that need to be addressed.
+
+Namely, some unsafe code is used in a few places for internal mutability without runtime checks. Proper wrapping number types are also not
+currently used, so the emu can only run properly if built in the release config. Both of these issues will be addressed soon.
 
 Additional issues can be found in the issue tracker on Github.
 
