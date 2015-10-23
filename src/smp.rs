@@ -1,5 +1,3 @@
-// TODO: This is a placeholder before I start generalizing traits
-// from the old code.
 use super::apu::Apu;
 
 pub struct Smp {
@@ -17,8 +15,6 @@ pub struct Smp {
     psw_p: bool,
     psw_v: bool,
     psw_n: bool,
-    // TODO: Look up some more behavior for I and B. Can't seem to find much
-    // but some instructions DO set them.
     psw_i: bool,
     psw_b: bool,
 
@@ -296,8 +292,6 @@ impl Smp {
             return;
         }
         self.cycles(2);
-        // TODO: Some of these casts might not be necessary; there's probably
-        // a better way to add a i8 to a u16 with proper signs.
         self.reg_pc += ((offset as i8) as i16) as u16;
     }
 
@@ -310,8 +304,6 @@ impl Smp {
             return;
         }
         self.cycles(2);
-        // TODO: Some of these casts might not be necessary; there's probably
-        // a better way to add a i8 to a u16 with proper signs.
         self.reg_pc += ((y as i8) as i16) as u16;
     }
 
@@ -379,8 +371,6 @@ impl Smp {
             return;
         }
         self.cycles(2);
-        // TODO: Some of these casts might not be necessary; there's probably
-        // a better way to add a i8 to a u16 with proper signs.
         self.reg_pc += ((y as i8) as i16) as u16;
     }
 
@@ -393,8 +383,6 @@ impl Smp {
             return;
         }
         self.cycles(2);
-        // TODO: Some of these casts might not be necessary; there's probably
-        // a better way to add a i8 to a u16 with proper signs.
         self.reg_pc += ((y as i8) as i16) as u16;
     }
 
@@ -409,8 +397,6 @@ impl Smp {
             return;
         }
         self.cycles(2);
-        // TODO: Some of these casts might not be necessary; there's probably
-        // a better way to add a i8 to a u16 with proper signs.
         self.reg_pc += ((y as i8) as i16) as u16;
     }
 
@@ -422,8 +408,6 @@ impl Smp {
             return;
         }
         self.cycles(2);
-        // TODO: Some of these casts might not be necessary; there's probably
-        // a better way to add a i8 to a u16 with proper signs.
         self.reg_pc += ((x as i8) as i16) as u16;
     }
 

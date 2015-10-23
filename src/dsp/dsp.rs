@@ -1,5 +1,3 @@
-// TODO: This is a placeholder before I start generalizing traits
-// from the old code.
 use super::super::apu::Apu;
 use super::voice::Voice;
 use super::filter::Filter;
@@ -110,7 +108,6 @@ impl Dsp {
         self.right_filter.reset();
         self.output_buffer.reset();
 
-        // TODO: NO idea if some of these are correct
         self.vol_left = 0x89;
         self.vol_right = 0x9c;
         self.echo_vol_left = 0x9f;
@@ -119,7 +116,7 @@ impl Dsp {
         self.echo_write_enabled = false;
         self.echo_feedback = 0;
         self.source_dir = 0;
-        self.echo_start_address = 0x60 << 8; // TODO: This shift gets repeated; abstract?
+        self.echo_start_address = Dsp::calculate_echo_start_address(0x60);
         self.echo_delay = 0x0e;
 
         self.set_filter_coefficient(0x00, 0x80);
@@ -138,6 +135,10 @@ impl Dsp {
         self.noise = 0x4000;
         self.echo_pos = 0;
         self.echo_length = 0;
+    }
+
+    fn calculate_echo_start_address(value: u8) -> u16 {
+        (value as u16) << 8
     }
 
     pub fn set_state(&mut self, spc: &Spc) {
@@ -240,7 +241,6 @@ impl Dsp {
 
         let voice_index = address >> 4;
         let voice_address = address & 0x0f;
-        // TODO: Finish filling these out
         if voice_address < 0x0a {
             if voice_address < 8 {
                 let voice = &mut self.voices[voice_index as usize];
@@ -287,7 +287,6 @@ impl Dsp {
             self.flush();
         }
 
-        // TODO
         let _ = address;
         0
     }
@@ -296,20 +295,19 @@ impl Dsp {
         ((self.counter + COUNTER_OFFSETS[rate as usize]) % COUNTER_RATES[rate as usize]) != 0
     }
 
-    // TODO: Refactor these methods to reduce code duplication
     pub fn read_source_dir_start_address(&self, index: i32) -> u32 {
-        let dir_address = (self.source_dir as i32) * 0x100;
-        let entry_address = dir_address + index * 4;
-        let mut ret = self.emulator().read_u8(entry_address as u32) as u32;
-        ret |= (self.emulator().read_u8((entry_address as u32) + 1) as u32) << 8;
-        ret
+        self.read_source_dir_address(index, 0)
     }
 
     pub fn read_source_dir_loop_address(&self, index: i32) -> u32 {
+        self.read_source_dir_address(index, 2)
+    }
+
+    fn read_source_dir_address(&self, index: i32, offset: i32) -> u32 {
         let dir_address = (self.source_dir as i32) * 0x100;
         let entry_address = dir_address + index * 4;
-        let mut ret = self.emulator().read_u8(entry_address as u32 + 2) as u32;
-        ret |= (self.emulator().read_u8((entry_address as u32) + 3) as u32) << 8;
+        let mut ret = self.emulator().read_u8((entry_address as u32) + (offset as u32)) as u32;
+        ret |= (self.emulator().read_u8((entry_address as u32) + (offset as u32) + 1) as u32) << 8;
         ret
     }
 

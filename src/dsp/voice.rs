@@ -1,6 +1,4 @@
 use super::dsp::Dsp;
-// TODO: This is a placeholder before I start generalizing traits
-// from the old code.
 use super::super::apu::Apu;
 use super::envelope::Envelope;
 use super::brr_block_decoder::BrrBlockDecoder;

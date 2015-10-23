@@ -48,8 +48,6 @@ impl Apu {
     }
 
     pub fn reset(&mut self) {
-        // TODO: Randomize ram
-        // TODO: Is there a better way to do this?
         for i in 0..IPL_ROM_LEN {
             self.ipl_rom[i] = DEFAULT_IPL_ROM[i];
         }
@@ -172,7 +170,6 @@ impl Apu {
     }
 
     fn set_test_reg(&self, value: u8) {
-        // TODO
         let _ = value;
         panic!("Test reg not yet implemented");
     }

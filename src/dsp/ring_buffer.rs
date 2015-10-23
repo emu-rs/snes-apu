@@ -1,5 +1,3 @@
-// TODO: This should really be a generic parameter on RingBuffer,
-// but rust does not currently have any facilities for this.
 use super::dsp::BUFFER_LEN;
 
 pub struct RingBuffer {

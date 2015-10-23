@@ -44,7 +44,6 @@ impl Envelope {
     }
 
     pub fn reset(&mut self) {
-        // TODO: Correct initial values for adsr0, adsr1, gain
         self.adsr0 = 0;
         self.adsr1 = 0;
         self.gain = 0;
@@ -123,7 +122,6 @@ impl Envelope {
                     }
                 }
 
-                // TODO: If we decide to unpack adsr0 on set, this is where the sustain env is
                 if let Mode::Decay = self.mode {
                     if (env >> 8) == (env_data >> 5) {
                         self.mode = Mode::Sustain;
