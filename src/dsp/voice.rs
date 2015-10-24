@@ -7,6 +7,7 @@ use super::gaussian::{KERNEL_SIZE, KERNEL};
 
 const RESAMPLE_BUFFER_LEN: usize = 4;
 
+#[derive(Clone, Copy)]
 pub enum ResamplingMode {
     Linear,
     Gaussian
@@ -80,7 +81,7 @@ pub struct Voice {
     sample_address: u32,
     sample_pos: i32,
 
-    resampling_mode: ResamplingMode,
+    pub resampling_mode: ResamplingMode,
     resample_buffer: [i32; RESAMPLE_BUFFER_LEN],
     resample_buffer_pos: usize,
 
@@ -89,7 +90,7 @@ pub struct Voice {
 }
 
 impl Voice {
-    pub fn new(dsp: *mut Dsp, emulator: *mut Apu) -> Voice {
+    pub fn new(dsp: *mut Dsp, emulator: *mut Apu, resampling_mode: ResamplingMode) -> Voice {
         let mut ret = Voice {
             dsp: dsp,
             emulator: emulator,
@@ -111,7 +112,7 @@ impl Voice {
             sample_address: 0,
             sample_pos: 0,
 
-            resampling_mode: ResamplingMode::Gaussian,
+            resampling_mode: resampling_mode,
             resample_buffer: [0; RESAMPLE_BUFFER_LEN],
             resample_buffer_pos: 0,
 
@@ -191,7 +192,7 @@ impl Voice {
                     let p2 = KERNEL[(kernel_index + KERNEL_SIZE / 4) % KERNEL_SIZE];
                     let p3 = KERNEL[(kernel_index + KERNEL_SIZE / 2) % KERNEL_SIZE];
                     let p4 = KERNEL[(kernel_index + KERNEL_SIZE * 3 / 4) % KERNEL_SIZE];
-                    (s1 * p1 + s2 * p2 + s3 * p3 + s4 * p4) >> 12
+                    (s1 * p1 + s2 * p2 + s3 * p3 + s4 * p4) >> 11
                 }
             };
             dsp_helpers::clamp(resampled) & !1

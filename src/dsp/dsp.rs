@@ -1,5 +1,5 @@
 use super::super::apu::Apu;
-use super::voice::Voice;
+use super::voice::{Voice, ResamplingMode};
 use super::filter::Filter;
 use super::ring_buffer::RingBuffer;
 use super::super::spc::spc::{Spc, REG_LEN};
@@ -46,11 +46,14 @@ pub struct Dsp {
     is_flushing: bool,
     noise: i32,
     echo_pos: i32,
-    echo_length: i32
+    echo_length: i32,
+
+    resampling_mode: ResamplingMode
 }
 
 impl Dsp {
     pub fn new(emulator: *mut Apu) -> Box<Dsp> {
+        let resampling_mode = ResamplingMode::Gaussian;
         let mut ret = Box::new(Dsp {
             emulator: emulator,
 
@@ -78,10 +81,12 @@ impl Dsp {
             noise: 0,
             echo_pos: 0,
             echo_length: 0,
+
+            resampling_mode: resampling_mode,
         });
         let ret_ptr = &mut *ret as *mut _;
         for _ in 0..NUM_VOICES {
-            ret.voices.push(Box::new(Voice::new(ret_ptr, emulator)));
+            ret.voices.push(Box::new(Voice::new(ret_ptr, emulator, resampling_mode)));
         }
         ret.reset();
         ret
@@ -135,6 +140,19 @@ impl Dsp {
         self.noise = 0x4000;
         self.echo_pos = 0;
         self.echo_length = 0;
+
+        self.set_resampling_mode(ResamplingMode::Gaussian);
+    }
+
+    pub fn resampling_mode(&self) -> ResamplingMode {
+        self.resampling_mode
+    }
+
+    pub fn set_resampling_mode(&mut self, resampling_mode: ResamplingMode) {
+        self.resampling_mode = resampling_mode;
+        for voice in self.voices.iter_mut() {
+            voice.resampling_mode = resampling_mode;
+        }
     }
 
     fn calculate_echo_start_address(value: u8) -> u16 {
