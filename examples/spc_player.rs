@@ -37,6 +37,12 @@ fn get_file_names() -> Result<iter::Skip<env::Args>> {
     }
 }
 
+struct SpcEndState {
+    sample_pos: i32,
+    fade_out_sample: i32,
+    end_sample: i32
+}
+
 fn play_spc_file(file_name: &String) -> Result<()> {
     let spc = try!(Spc::load(file_name));
 
@@ -67,7 +73,7 @@ fn play_spc_file(file_name: &String) -> Result<()> {
         });
     } else {
         println!(" No ID666 tag present.");
-    }
+    };
 
     let mut apu = Apu::new();
     apu.set_state(&spc);
@@ -78,19 +84,68 @@ fn play_spc_file(file_name: &String) -> Result<()> {
 
     let mut driver = audio_driver_factory::create_default();
     driver.set_sample_rate(SAMPLE_RATE as i32);
-    let mut left = [0; BUFFER_LEN];
-    let mut right = [0; BUFFER_LEN];
+    let mut left = Box::new([0; BUFFER_LEN]);
+    let mut right = Box::new([0; BUFFER_LEN]);
+    let end_state = if let Some(ref id666_tag) = spc.id666_tag {
+        let fade_out_sample = id666_tag.seconds_to_play_before_fading_out * (SAMPLE_RATE as i32);
+        let end_sample = fade_out_sample + id666_tag.fade_out_length * (SAMPLE_RATE as i32) / 1000;
+        Some(Arc::new(Mutex::new(SpcEndState {
+            sample_pos: 0,
+            fade_out_sample: fade_out_sample,
+            end_sample: end_sample
+        })))
+    } else {
+        None
+    };
+    let driver_end_state = end_state.clone();
     driver.set_render_callback(Some(Box::new(move |buffer, num_frames| {
-        apu.render(&mut left, &mut right, num_frames as i32);
-        for i in 0..num_frames {
-            let j = i * 2;
-            buffer[j + 0] = left[i] as f32 / 32768.0;
-            buffer[j + 1] = right[i] as f32 / 32768.0;
+        apu.render(&mut *left, &mut *right, num_frames as i32);
+        match driver_end_state {
+            Some(ref state_mutex) => {
+                let state = &mut *state_mutex.lock().unwrap();
+                for i in 0..num_frames {
+                    let j = i * 2;
+                    let sample_index = state.sample_pos + (i as i32);
+                    let f = if sample_index >= state.end_sample {
+                        0.0
+                    } else if sample_index >= state.fade_out_sample {
+                        1.0 - ((sample_index - state.fade_out_sample) as f32) / ((state.end_sample - state.fade_out_sample) as f32)
+                    } else {
+                        1.0
+                    };
+                    buffer[j + 0] = left[i] as f32 * f / 32768.0;
+                    buffer[j + 1] = right[i] as f32 * f / 32768.0;
+                }
+                state.sample_pos += num_frames as i32;
+            },
+            _ => {
+                for i in 0..num_frames {
+                    let j = i * 2;
+                    buffer[j + 0] = left[i] as f32 / 32768.0;
+                    buffer[j + 1] = right[i] as f32 / 32768.0;
+                }
+            }
         }
     })));
 
-    println!("Return quits.");
-    try!(wait_for_key_press_with_busy_icon());
+    match end_state {
+        Some(ref state_mutex) => {
+            loop {
+                {
+                    let state = &*state_mutex.lock().unwrap();
+                    if state.sample_pos >= state.end_sample {
+                        break;
+                    }
+                }
+
+                thread::sleep_ms(5);
+            }
+        },
+        _ => {
+            println!("Return stops song.");
+            try!(wait_for_key_press_with_busy_icon());
+        }
+    }
 
     Ok(())
 }
@@ -103,7 +158,7 @@ fn wait_for_key_press_with_busy_icon() -> Result<()> {
     let handle = thread::spawn(move || {
         let chars = ['-', '/', '|', '\\'];
         let mut char_index = 0;
-        while !*(thread_is_done.lock().unwrap()) {
+        while !*thread_is_done.lock().unwrap() {
             print!("\r[{}]", chars[char_index]);
             stdout().flush().unwrap();
             char_index = (char_index + 1) % chars.len();
