@@ -3,6 +3,7 @@ use super::super::apu::Apu;
 use super::envelope::Envelope;
 use super::brr_block_decoder::BrrBlockDecoder;
 use super::dsp_helpers;
+use super::gaussian;
 
 const RESAMPLE_BUFFER_LEN: usize = 4;
 
@@ -178,10 +179,10 @@ impl Voice {
                 ResamplingMode::Linear => {
                     let p1 = self.sample_pos;
                     let p2 = 0x1000 - p1;
-                    dsp_helpers::clamp((
-                        self.resample_buffer[self.resample_buffer_pos] * p1 +
-                        self.resample_buffer[(self.resample_buffer_pos + 1) % RESAMPLE_BUFFER_LEN] * p2) >> 12) & !1
-                }
+                    let s1 = self.resample_buffer[self.resample_buffer_pos];
+                    let s2 = self.resample_buffer[(self.resample_buffer_pos + 1) % RESAMPLE_BUFFER_LEN];
+                    dsp_helpers::clamp((s1 * p1 + s2 * p2) >> 12) & !1
+                },
             }
         } else {
             ((noise * 2) as i16) as i32
