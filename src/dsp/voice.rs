@@ -72,7 +72,7 @@ pub struct Voice {
     sample_address: u32,
     sample_pos: i32,
     current_sample: i32,
-    next_sample: i32,
+    last_sample: i32,
 
     pub output_buffer: Box<VoiceBuffer>,
     pub is_muted: bool
@@ -102,6 +102,7 @@ impl Voice {
             sample_pos: 0,
             current_sample: 0,
             next_sample: 0,
+            last_sample: 0,
 
             output_buffer: Box::new(VoiceBuffer::new()),
             is_muted: false,
@@ -141,7 +142,7 @@ impl Voice {
         self.sample_address = 0;
         self.sample_pos = 0;
         self.current_sample = 0;
-        self.next_sample = 0;
+        self.last_sample = 0;
 
         self.output_buffer.reset();
         self.is_muted = false;
@@ -162,7 +163,7 @@ impl Voice {
         let mut sample = if !self.noise_on {
             let p1 = self.sample_pos;
             let p2 = 0x1000 - p1;
-            dsp_helpers::clamp((self.current_sample * p2 + self.next_sample * p1) >> 12) & !1
+            dsp_helpers::clamp((self.current_sample * p1 + self.last_sample * p2) >> 12) & !1
         } else {
             ((noise * 2) as i16) as i32
         };
@@ -219,7 +220,7 @@ impl Voice {
         self.brr_block_decoder.reset(0, 0);
         self.read_next_block();
         self.sample_pos = 0;
-        self.next_sample = 0;
+        self.current_sample = 0;
         self.read_next_sample();
         self.envelope.key_on();
     }
@@ -243,7 +244,7 @@ impl Voice {
     }
 
     fn read_next_sample(&mut self) {
-        self.current_sample = self.next_sample;
-        self.next_sample = self.brr_block_decoder.read_next_sample() as i32;
+        self.last_sample = self.current_sample;
+        self.current_sample = self.brr_block_decoder.read_next_sample() as i32;
     }
 }
