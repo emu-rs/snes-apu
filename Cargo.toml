@@ -1,6 +1,6 @@
 [package]
 name = "snes-apu"
-version = "0.1.7"
+version = "0.1.8"
 authors = ["ferris <jake@fusetools.com>"]
 description = "A Super Nintendo audio unit emulator."
 homepage = "https://github.com/emu-rs/snes-apu"
