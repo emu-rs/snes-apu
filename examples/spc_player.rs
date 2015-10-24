@@ -23,8 +23,11 @@ fn main() {
 }
 
 fn play_spc_files() -> Result<()> {
+    let mut driver = audio_driver_factory::create_default();
+    driver.set_sample_rate(SAMPLE_RATE as i32);
+
     for file_name in try!(get_file_names()) {
-        try!(play_spc_file(&file_name));
+        try!(play_spc_file(&mut driver, &file_name));
     }
     Ok(())
 }
@@ -44,7 +47,7 @@ struct SpcEndState {
     is_done_send: Sender<()>
 }
 
-fn play_spc_file(file_name: &String) -> Result<()> {
+fn play_spc_file(driver: &mut Box<AudioDriver>, file_name: &String) -> Result<()> {
     let spc = try!(Spc::load(file_name));
 
     print_spc_file_info(file_name, &spc);
@@ -58,8 +61,6 @@ fn play_spc_file(file_name: &String) -> Result<()> {
 
     let (is_done_send, is_done_recv) = channel();
 
-    let mut driver = audio_driver_factory::create_default();
-    driver.set_sample_rate(SAMPLE_RATE as i32);
     let mut left = Box::new([0; BUFFER_LEN]);
     let mut right = Box::new([0; BUFFER_LEN]);
 
