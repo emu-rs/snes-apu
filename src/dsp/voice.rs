@@ -6,6 +6,11 @@ use super::dsp_helpers;
 
 const RESAMPLE_BUFFER_LEN: usize = 4;
 
+pub enum ResamplingMode {
+    Linear/*,
+    Gaussian*/
+}
+
 #[derive(Clone, Copy)]
 pub struct VoiceOutput {
     pub left_out: i32,
@@ -74,6 +79,7 @@ pub struct Voice {
     sample_address: u32,
     sample_pos: i32,
 
+    resampling_mode: ResamplingMode,
     resample_buffer: [i32; RESAMPLE_BUFFER_LEN],
     resample_buffer_pos: usize,
 
@@ -104,6 +110,7 @@ impl Voice {
             sample_address: 0,
             sample_pos: 0,
 
+            resampling_mode: ResamplingMode::Linear,
             resample_buffer: [0; RESAMPLE_BUFFER_LEN],
             resample_buffer_pos: 0,
 
@@ -167,11 +174,15 @@ impl Voice {
         }
 
         let mut sample = if !self.noise_on {
-            let p1 = self.sample_pos;
-            let p2 = 0x1000 - p1;
-            dsp_helpers::clamp((
-                self.resample_buffer[self.resample_buffer_pos] * p1 +
-                self.resample_buffer[(self.resample_buffer_pos + 1) % RESAMPLE_BUFFER_LEN] * p2) >> 12) & !1
+            match self.resampling_mode {
+                ResamplingMode::Linear => {
+                    let p1 = self.sample_pos;
+                    let p2 = 0x1000 - p1;
+                    dsp_helpers::clamp((
+                        self.resample_buffer[self.resample_buffer_pos] * p1 +
+                        self.resample_buffer[(self.resample_buffer_pos + 1) % RESAMPLE_BUFFER_LEN] * p2) >> 12) & !1
+                }
+            }
         } else {
             ((noise * 2) as i16) as i32
         };
