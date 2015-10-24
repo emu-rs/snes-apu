@@ -6,7 +6,7 @@ use std::iter;
 use std::env;
 use std::io::{Result, Error, ErrorKind, Write, stdout, stdin};
 use std::thread;
-use std::sync::{Arc, Mutex};
+use std::sync::mpsc::{channel, Sender, Receiver};
 
 use emu::audio_driver::AudioDriver;
 use emu::audio_driver_factory;
@@ -40,7 +40,8 @@ fn get_file_names() -> Result<iter::Skip<env::Args>> {
 struct SpcEndState {
     sample_pos: i32,
     fade_out_sample: i32,
-    end_sample: i32
+    end_sample: i32,
+    is_done_send: Sender<()>
 }
 
 fn play_spc_file(file_name: &String) -> Result<()> {
@@ -82,27 +83,28 @@ fn play_spc_file(file_name: &String) -> Result<()> {
     //  think we're OK to do it too :)
     apu.clear_echo_buffer();
 
+    let (is_done_send, is_done_recv) = channel();
+
     let mut driver = audio_driver_factory::create_default();
     driver.set_sample_rate(SAMPLE_RATE as i32);
     let mut left = Box::new([0; BUFFER_LEN]);
     let mut right = Box::new([0; BUFFER_LEN]);
-    let end_state = if let Some(ref id666_tag) = spc.id666_tag {
+    let mut end_state = if let Some(ref id666_tag) = spc.id666_tag {
         let fade_out_sample = id666_tag.seconds_to_play_before_fading_out * (SAMPLE_RATE as i32);
         let end_sample = fade_out_sample + id666_tag.fade_out_length * (SAMPLE_RATE as i32) / 1000;
-        Some(Arc::new(Mutex::new(SpcEndState {
+        Some(SpcEndState {
             sample_pos: 0,
             fade_out_sample: fade_out_sample,
-            end_sample: end_sample
-        })))
+            end_sample: end_sample,
+            is_done_send: is_done_send.clone()
+        })
     } else {
         None
     };
-    let driver_end_state = end_state.clone();
     driver.set_render_callback(Some(Box::new(move |buffer, num_frames| {
         apu.render(&mut *left, &mut *right, num_frames as i32);
-        match driver_end_state {
-            Some(ref state_mutex) => {
-                let state = &mut *state_mutex.lock().unwrap();
+        match end_state {
+            Some(ref mut state) => {
                 for i in 0..num_frames {
                     let j = i * 2;
                     let sample_index = state.sample_pos + (i as i32);
@@ -117,6 +119,9 @@ fn play_spc_file(file_name: &String) -> Result<()> {
                     buffer[j + 1] = right[i] as f32 * f / 32768.0;
                 }
                 state.sample_pos += num_frames as i32;
+                if state.sample_pos >= state.end_sample {
+                    state.is_done_send.send(()).unwrap();
+                }
             },
             _ => {
                 for i in 0..num_frames {
@@ -128,50 +133,31 @@ fn play_spc_file(file_name: &String) -> Result<()> {
         }
     })));
 
-    match end_state {
-        Some(ref state_mutex) => {
-            loop {
-                {
-                    let state = &*state_mutex.lock().unwrap();
-                    if state.sample_pos >= state.end_sample {
-                        break;
-                    }
-                }
-
-                thread::sleep_ms(5);
-            }
-        },
-        _ => {
-            println!("Return stops song.");
-            try!(wait_for_key_press_with_busy_icon());
-        }
-    }
-
-    Ok(())
+    wait_for_key_press_with_busy_icon(is_done_send, is_done_recv)
 }
 
-// TODO: This function is super thread-safe but can panic XD
-fn wait_for_key_press_with_busy_icon() -> Result<()> {
-    let is_done = Arc::new(Mutex::new(false));
-
-    let thread_is_done = is_done.clone();
-    let handle = thread::spawn(move || {
-        let chars = ['-', '/', '|', '\\'];
-        let mut char_index = 0;
-        while !*thread_is_done.lock().unwrap() {
-            print!("\r[{}]", chars[char_index]);
-            stdout().flush().unwrap();
-            char_index = (char_index + 1) % chars.len();
-
-            thread::sleep_ms(5);
-        }
-        print!("\r   \r");
+fn wait_for_key_press_with_busy_icon(is_done_send: Sender<()>, is_done_recv: Receiver<()>) -> Result<()> {
+    thread::spawn(move || {
+        let mut s = String::new();
+        stdin().read_line(&mut s).unwrap();
+        is_done_send.send(()).unwrap();
     });
 
-    let mut s = String::new();
-    try!(stdin().read_line(&mut s));
-    *is_done.lock().unwrap() = true;
-    handle.join().unwrap();
+    println!("Return stops song.");
+    let chars = ['-', '/', '|', '\\'];
+    let mut char_index = 0;
+    loop {
+        if let Ok(()) = is_done_recv.try_recv() {
+            break;
+        }
+
+        print!("\r[{}]", chars[char_index]);
+        stdout().flush().unwrap();
+        char_index = (char_index + 1) % chars.len();
+
+        thread::sleep_ms(5);
+    }
+    print!("\r   \r");
 
     Ok(())
 }
