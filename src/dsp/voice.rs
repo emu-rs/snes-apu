@@ -4,6 +4,8 @@ use super::envelope::Envelope;
 use super::brr_block_decoder::BrrBlockDecoder;
 use super::dsp_helpers;
 
+const RESAMPLE_BUFFER_LEN: usize = 4;
+
 #[derive(Clone, Copy)]
 pub struct VoiceOutput {
     pub left_out: i32,
@@ -71,8 +73,9 @@ pub struct Voice {
     brr_block_decoder: Box<BrrBlockDecoder>,
     sample_address: u32,
     sample_pos: i32,
-    current_sample: i32,
-    last_sample: i32,
+
+    resample_buffer: [i32; RESAMPLE_BUFFER_LEN],
+    resample_buffer_pos: usize,
 
     pub output_buffer: Box<VoiceBuffer>,
     pub is_muted: bool
@@ -100,9 +103,9 @@ impl Voice {
             brr_block_decoder: Box::new(BrrBlockDecoder::new()),
             sample_address: 0,
             sample_pos: 0,
-            current_sample: 0,
-            next_sample: 0,
-            last_sample: 0,
+
+            resample_buffer: [0; RESAMPLE_BUFFER_LEN],
+            resample_buffer_pos: 0,
 
             output_buffer: Box::new(VoiceBuffer::new()),
             is_muted: false,
@@ -141,8 +144,11 @@ impl Voice {
         self.brr_block_decoder.reset(0, 0);
         self.sample_address = 0;
         self.sample_pos = 0;
-        self.current_sample = 0;
-        self.last_sample = 0;
+
+        for i in 0..RESAMPLE_BUFFER_LEN {
+            self.resample_buffer[i] = 0;
+        }
+        self.resample_buffer_pos = 0;
 
         self.output_buffer.reset();
         self.is_muted = false;
@@ -163,7 +169,9 @@ impl Voice {
         let mut sample = if !self.noise_on {
             let p1 = self.sample_pos;
             let p2 = 0x1000 - p1;
-            dsp_helpers::clamp((self.current_sample * p1 + self.last_sample * p2) >> 12) & !1
+            dsp_helpers::clamp((
+                self.resample_buffer[self.resample_buffer_pos] * p1 +
+                self.resample_buffer[(self.resample_buffer_pos + 1) % RESAMPLE_BUFFER_LEN] * p2) >> 12) & !1
         } else {
             ((noise * 2) as i16) as i32
         };
@@ -220,7 +228,7 @@ impl Voice {
         self.brr_block_decoder.reset(0, 0);
         self.read_next_block();
         self.sample_pos = 0;
-        self.current_sample = 0;
+        self.resample_buffer[self.resample_buffer_pos] = 0;
         self.read_next_sample();
         self.envelope.key_on();
     }
@@ -244,7 +252,10 @@ impl Voice {
     }
 
     fn read_next_sample(&mut self) {
-        self.last_sample = self.current_sample;
-        self.current_sample = self.brr_block_decoder.read_next_sample() as i32;
+        self.resample_buffer_pos = match self.resample_buffer_pos {
+            0 => RESAMPLE_BUFFER_LEN - 1,
+            x => x - 1
+        };
+        self.resample_buffer[self.resample_buffer_pos] = self.brr_block_decoder.read_next_sample() as i32;
     }
 }
