@@ -188,10 +188,10 @@ impl Voice {
                     let s3 = self.resample_buffer[(self.resample_buffer_pos + 2) % RESAMPLE_BUFFER_LEN];
                     let s4 = self.resample_buffer[(self.resample_buffer_pos + 3) % RESAMPLE_BUFFER_LEN];
                     let kernel_index = (self.sample_pos >> 2) as usize;
-                    let p1 = KERNEL[kernel_index];
-                    let p2 = KERNEL[(kernel_index + KERNEL_SIZE / 4) % KERNEL_SIZE];
-                    let p3 = KERNEL[(kernel_index + KERNEL_SIZE / 2) % KERNEL_SIZE];
-                    let p4 = KERNEL[(kernel_index + KERNEL_SIZE * 3 / 4) % KERNEL_SIZE];
+                    let p1 = KERNEL[kernel_index] as i32;
+                    let p2 = KERNEL[(kernel_index + KERNEL_SIZE / 4) % KERNEL_SIZE] as i32;
+                    let p3 = KERNEL[(kernel_index + KERNEL_SIZE / 2) % KERNEL_SIZE] as i32;
+                    let p4 = KERNEL[(kernel_index + KERNEL_SIZE * 3 / 4) % KERNEL_SIZE] as i32;
                     (s1 * p1 + s2 * p2 + s3 * p3 + s4 * p4) >> 11
                 }
             };

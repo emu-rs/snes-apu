@@ -1,5 +1,5 @@
 pub const KERNEL_SIZE: usize = 4096;
-pub static KERNEL: [i32; KERNEL_SIZE] = [
+pub static KERNEL: [i16; KERNEL_SIZE] = [
        0,    0,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
