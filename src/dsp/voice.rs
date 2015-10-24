@@ -187,7 +187,7 @@ impl Voice {
                 ResamplingMode::Gaussian => {
                     let s3 = self.resample_buffer[(self.resample_buffer_pos + 2) % RESAMPLE_BUFFER_LEN];
                     let s4 = self.resample_buffer[(self.resample_buffer_pos + 3) % RESAMPLE_BUFFER_LEN];
-                    let kernel_index = (self.sample_pos >> 2) as usize;
+                    let kernel_index = (self.sample_pos >> 4) as usize;
                     let p1 = KERNEL[kernel_index];
                     let p2 = KERNEL[(kernel_index + KERNEL_SIZE / 4) % KERNEL_SIZE];
                     let p3 = KERNEL[(kernel_index + KERNEL_SIZE / 2) % KERNEL_SIZE];
