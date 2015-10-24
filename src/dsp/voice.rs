@@ -4,10 +4,51 @@ use super::envelope::Envelope;
 use super::brr_block_decoder::BrrBlockDecoder;
 use super::dsp_helpers;
 
+#[derive(Clone, Copy)]
 pub struct VoiceOutput {
     pub left_out: i32,
     pub right_out: i32,
     pub last_voice_out: i32
+}
+
+impl VoiceOutput {
+    pub fn default() -> VoiceOutput {
+        VoiceOutput {
+            left_out: 0,
+            right_out: 0,
+            last_voice_out: 0
+        }
+    }
+}
+
+pub const VOICE_BUFFER_LEN: usize = 128;
+
+// TODO: If Rust had facilities for specifying arrray sizes with generic parameters,
+// this could be removed in favor of a more generalized RingBuffer.
+pub struct VoiceBuffer {
+    pub buffer: Box<[VoiceOutput; VOICE_BUFFER_LEN]>,
+    pub pos: i32
+}
+
+impl VoiceBuffer {
+    pub fn new() -> VoiceBuffer {
+        VoiceBuffer {
+            buffer: Box::new([VoiceOutput::default(); VOICE_BUFFER_LEN]),
+            pos: 0
+        }
+    }
+
+    pub fn reset(&mut self) {
+        for i in 0..VOICE_BUFFER_LEN {
+            self.buffer[i] = VoiceOutput::default();
+        }
+        self.pos = 0;
+    }
+
+    pub fn write(&mut self, value: VoiceOutput) {
+        self.buffer[self.pos as usize] = value;
+        self.pos = (self.pos + 1) % (VOICE_BUFFER_LEN as i32);
+    }
 }
 
 pub struct Voice {
@@ -31,7 +72,10 @@ pub struct Voice {
     sample_address: u32,
     sample_pos: i32,
     current_sample: i32,
-    next_sample: i32
+    next_sample: i32,
+
+    pub output_buffer: Box<VoiceBuffer>,
+    pub is_muted: bool
 }
 
 impl Voice {
@@ -57,7 +101,10 @@ impl Voice {
             sample_address: 0,
             sample_pos: 0,
             current_sample: 0,
-            next_sample: 0
+            next_sample: 0,
+
+            output_buffer: Box::new(VoiceBuffer::new()),
+            is_muted: false,
         };
         ret.reset();
         ret
@@ -95,6 +142,9 @@ impl Voice {
         self.sample_pos = 0;
         self.current_sample = 0;
         self.next_sample = 0;
+
+        self.output_buffer.reset();
+        self.is_muted = false;
     }
 
     pub fn render_sample(&mut self, last_voice_out: i32, noise: i32) -> VoiceOutput {
@@ -141,11 +191,22 @@ impl Voice {
             }
         }
 
-        VoiceOutput {
-            left_out: dsp_helpers::multiply_volume(sample, self.vol_left),
-            right_out: dsp_helpers::multiply_volume(sample, self.vol_right),
-            last_voice_out: sample
-        }
+        let ret =
+            if !self.is_muted {
+                VoiceOutput {
+                    left_out: dsp_helpers::multiply_volume(sample, self.vol_left),
+                    right_out: dsp_helpers::multiply_volume(sample, self.vol_right),
+                    last_voice_out: sample
+                }
+            } else {
+                VoiceOutput {
+                    left_out: 0,
+                    right_out: 0,
+                    last_voice_out: 0
+                }
+            };
+        self.output_buffer.write(ret);
+        ret
     }
 
     pub fn set_pitch_high(&mut self, value: u8) {

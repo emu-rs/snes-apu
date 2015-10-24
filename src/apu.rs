@@ -17,8 +17,8 @@ pub struct Apu {
     ram: Box<[u8; RAM_LEN]>,
     ipl_rom: Box<[u8; IPL_ROM_LEN]>,
 
-    smp: Option<Box<Smp>>,
-    dsp: Option<Box<Dsp>>,
+    pub smp: Option<Box<Smp>>,
+    pub dsp: Option<Box<Dsp>>,
 
     timers: [Timer; 3],
 
@@ -48,6 +48,10 @@ impl Apu {
     }
 
     pub fn reset(&mut self) {
+        for i in 0..RAM_LEN {
+            self.ram[i] = 0;
+        }
+
         for i in 0..IPL_ROM_LEN {
             self.ipl_rom[i] = DEFAULT_IPL_ROM[i];
         }
