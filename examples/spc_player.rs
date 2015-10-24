@@ -23,9 +23,17 @@ fn main() {
 }
 
 fn play_spc_files() -> Result<()> {
+    let mut driver = audio_driver_factory::create_default();
+    driver.set_sample_rate(SAMPLE_RATE as i32);
+
+    let (is_done_send, is_done_recv) = channel();
+
+    spawn_keypress_thread(is_done_send.clone());
+
     for file_name in try!(get_file_names()) {
-        try!(play_spc_file(&file_name));
+        try!(play_spc_file(&mut driver, &is_done_send, &is_done_recv, &file_name));
     }
+
     Ok(())
 }
 
@@ -37,6 +45,16 @@ fn get_file_names() -> Result<iter::Skip<env::Args>> {
     }
 }
 
+fn spawn_keypress_thread(is_done_send: Sender<()>) {
+    thread::spawn(move || {
+        loop {
+            let mut s = String::new();
+            stdin().read_line(&mut s).ok();
+            is_done_send.send(()).ok();
+        }
+    });
+}
+
 struct SpcEndState {
     sample_pos: i32,
     fade_out_sample: i32,
@@ -44,7 +62,7 @@ struct SpcEndState {
     is_done_send: Sender<()>
 }
 
-fn play_spc_file(file_name: &String) -> Result<()> {
+fn play_spc_file(driver: &mut Box<AudioDriver>, is_done_send: &Sender<()>, is_done_recv: &Receiver<()>, file_name: &String) -> Result<()> {
     let spc = try!(Spc::load(file_name));
 
     print_spc_file_info(file_name, &spc);
@@ -56,10 +74,6 @@ fn play_spc_file(file_name: &String) -> Result<()> {
     //  think we're OK to do it too :)
     apu.clear_echo_buffer();
 
-    let (is_done_send, is_done_recv) = channel();
-
-    let mut driver = audio_driver_factory::create_default();
-    driver.set_sample_rate(SAMPLE_RATE as i32);
     let mut left = Box::new([0; BUFFER_LEN]);
     let mut right = Box::new([0; BUFFER_LEN]);
 
@@ -108,7 +122,7 @@ fn play_spc_file(file_name: &String) -> Result<()> {
         }
     })));
 
-    wait_for_key_press_with_busy_icon(is_done_send, is_done_recv)
+    wait_for_key_press_with_busy_icon(&is_done_recv)
 }
 
 fn print_spc_file_info(file_name: &String, spc: &Spc) {
@@ -142,13 +156,7 @@ fn print_spc_file_info(file_name: &String, spc: &Spc) {
     };
 }
 
-fn wait_for_key_press_with_busy_icon(is_done_send: Sender<()>, is_done_recv: Receiver<()>) -> Result<()> {
-    thread::spawn(move || {
-        let mut s = String::new();
-        stdin().read_line(&mut s).ok();
-        is_done_send.send(()).ok();
-    });
-
+fn wait_for_key_press_with_busy_icon(is_done_recv: &Receiver<()>) -> Result<()> {
     println!("Return stops song.");
     let chars = ['-', '/', '|', '\\'];
     let mut char_index = 0;
