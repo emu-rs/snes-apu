@@ -252,7 +252,9 @@ impl Voice {
         self.brr_block_decoder.reset(0, 0);
         self.read_next_block();
         self.sample_pos = 0;
-        self.resample_buffer[self.resample_buffer_pos] = 0;
+        for i in 0..RESAMPLE_BUFFER_LEN {
+            self.resample_buffer[i] = 0;
+        }
         self.read_next_sample();
         self.envelope.key_on();
     }
