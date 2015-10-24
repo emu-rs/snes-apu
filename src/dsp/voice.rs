@@ -3,13 +3,13 @@ use super::super::apu::Apu;
 use super::envelope::Envelope;
 use super::brr_block_decoder::BrrBlockDecoder;
 use super::dsp_helpers;
-use super::gaussian;
+use super::gaussian::{KERNEL_SIZE, KERNEL};
 
 const RESAMPLE_BUFFER_LEN: usize = 4;
 
 pub enum ResamplingMode {
-    Linear/*,
-    Gaussian*/
+    Linear,
+    Gaussian
 }
 
 #[derive(Clone, Copy)]
@@ -111,7 +111,7 @@ impl Voice {
             sample_address: 0,
             sample_pos: 0,
 
-            resampling_mode: ResamplingMode::Linear,
+            resampling_mode: ResamplingMode::Gaussian,
             resample_buffer: [0; RESAMPLE_BUFFER_LEN],
             resample_buffer_pos: 0,
 
@@ -175,15 +175,26 @@ impl Voice {
         }
 
         let mut sample = if !self.noise_on {
-            match self.resampling_mode {
+            let s1 = self.resample_buffer[self.resample_buffer_pos];
+            let s2 = self.resample_buffer[(self.resample_buffer_pos + 1) % RESAMPLE_BUFFER_LEN];
+            let resampled = match self.resampling_mode {
                 ResamplingMode::Linear => {
                     let p1 = self.sample_pos;
                     let p2 = 0x1000 - p1;
-                    let s1 = self.resample_buffer[self.resample_buffer_pos];
-                    let s2 = self.resample_buffer[(self.resample_buffer_pos + 1) % RESAMPLE_BUFFER_LEN];
-                    dsp_helpers::clamp((s1 * p1 + s2 * p2) >> 12) & !1
+                    (s1 * p1 + s2 * p2) >> 12
                 },
-            }
+                ResamplingMode::Gaussian => {
+                    let s3 = self.resample_buffer[(self.resample_buffer_pos + 2) % RESAMPLE_BUFFER_LEN];
+                    let s4 = self.resample_buffer[(self.resample_buffer_pos + 3) % RESAMPLE_BUFFER_LEN];
+                    let kernel_index = (self.sample_pos >> 2) as usize;
+                    let p1 = KERNEL[kernel_index];
+                    let p2 = KERNEL[(kernel_index + KERNEL_SIZE / 4) % KERNEL_SIZE];
+                    let p3 = KERNEL[(kernel_index + KERNEL_SIZE / 2) % KERNEL_SIZE];
+                    let p4 = KERNEL[(kernel_index + KERNEL_SIZE * 3 / 4) % KERNEL_SIZE];
+                    (s1 * p1 + s2 * p2 + s3 * p3 + s4 * p4) >> 12
+                }
+            };
+            dsp_helpers::clamp(resampled) & !1
         } else {
             ((noise * 2) as i16) as i32
         };
