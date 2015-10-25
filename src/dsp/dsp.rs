@@ -191,13 +191,21 @@ impl Dsp {
                 self.noise = (feedback & 0x4000) ^ (self.noise >> 1);
             }
 
+            let mut are_any_voices_solod = false;
+            for voice in self.voices.iter() {
+                if voice.is_solod {
+                    are_any_voices_solod = true;
+                    break;
+                }
+            }
+
             let mut left_out = 0;
             let mut right_out = 0;
             let mut left_echo_out = 0;
             let mut right_echo_out = 0;
             let mut last_voice_out = 0;
             for voice in self.voices.iter_mut() {
-                let output = voice.render_sample(last_voice_out, self.noise);
+                let output = voice.render_sample(last_voice_out, self.noise, are_any_voices_solod);
 
                 left_out = dsp_helpers::clamp(left_out + output.left_out);
                 right_out = dsp_helpers::clamp(right_out + output.right_out);

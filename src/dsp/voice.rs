@@ -32,8 +32,6 @@ impl VoiceOutput {
 
 pub const VOICE_BUFFER_LEN: usize = 128;
 
-// TODO: If Rust had facilities for specifying arrray sizes with generic parameters,
-// this could be removed in favor of a more generalized RingBuffer.
 pub struct VoiceBuffer {
     pub buffer: Box<[VoiceOutput; VOICE_BUFFER_LEN]>,
     pub pos: i32
@@ -86,7 +84,8 @@ pub struct Voice {
     resample_buffer_pos: usize,
 
     pub output_buffer: Box<VoiceBuffer>,
-    pub is_muted: bool
+    pub is_muted: bool,
+    pub is_solod: bool
 }
 
 impl Voice {
@@ -118,6 +117,7 @@ impl Voice {
 
             output_buffer: Box::new(VoiceBuffer::new()),
             is_muted: false,
+            is_solod: false
         };
         ret.reset();
         ret
@@ -161,9 +161,10 @@ impl Voice {
 
         self.output_buffer.reset();
         self.is_muted = false;
+        self.is_solod = false;
     }
 
-    pub fn render_sample(&mut self, last_voice_out: i32, noise: i32) -> VoiceOutput {
+    pub fn render_sample(&mut self, last_voice_out: i32, noise: i32, are_any_voices_solod: bool) -> VoiceOutput {
         let mut pitch = ((self.pitch_high as i32) << 8) | (self.pitch_low as i32);
         if self.pitch_mod {
             pitch += ((last_voice_out >> 5) * pitch) >> 10;
@@ -225,7 +226,7 @@ impl Voice {
         }
 
         let ret =
-            if !self.is_muted {
+            if self.is_solod || (!self.is_muted && !are_any_voices_solod) {
                 VoiceOutput {
                     left_out: dsp_helpers::multiply_volume(sample, self.vol_left),
                     right_out: dsp_helpers::multiply_volume(sample, self.vol_right),
