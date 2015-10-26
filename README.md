@@ -36,6 +36,9 @@ Included in the `test` directory are a couple of test SPC files:
 - `ferris-nu.spc` - soundtrack for ["nu" by elix](https://www.youtube.com/watch?v=wi-NxM1EaXM)
 - `smashit.spc` - soundtrack for ["Smash It" by elix](https://www.youtube.com/watch?v=di_MnKNDfm0)
 
+Other projects consuming this library:
+- [snes-apu-dbg](https://github.com/yupferris/snes-apu-dbg) - a Qt-based graphical debugger used in development of this library
+
 ## Attribution
 Much of the core SMP code was baked from byuu's higan source code: http://byuu.org/emulation/higan/
 
