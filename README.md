@@ -17,7 +17,7 @@ The audio unit is made up of a few major parts:
 - 3 timers
 - And some extra glue here and there to tie it all together :)
 
-[Originally written in C++](https://github.com/yupferris/SamuraiPizzaCats), this emulator serves as a pilot for [porting all of my
+This emulator serves as a pilot for [porting all of my
 emulator infrastructure to Rust](https://github.com/emu-rs/emu), and it's been a rather successful project thus far.
 
 ## Shortcomings
