@@ -19,13 +19,6 @@ impl Timer {
         }
     }
 
-    pub fn reset(&mut self) {
-        self.is_running = false;
-        self.target = None;
-        self.counter_low = 0;
-        self.counter_high = 0;
-    }
-
     pub fn cpu_cycles_callback(&mut self, num_cycles: i32) {
         if !self.is_running {
             return;

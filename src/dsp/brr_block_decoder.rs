@@ -12,7 +12,7 @@ pub struct BrrBlockDecoder {
 
 impl BrrBlockDecoder {
     pub fn new() -> BrrBlockDecoder {
-        let mut ret = BrrBlockDecoder {
+        BrrBlockDecoder {
             is_end: false,
             is_looping: false,
             samples: [0; 16],
@@ -21,9 +21,7 @@ impl BrrBlockDecoder {
 
             last_sample: 0,
             last_last_sample: 0
-        };
-        ret.reset(0, 0);
-        ret
+        }
     }
 
     pub fn reset(&mut self, last_sample: i16, last_last_sample: i16) {

@@ -10,14 +10,14 @@ const RESAMPLE_BUFFER_LEN: usize = 4;
 #[derive(Clone, Copy)]
 pub enum ResamplingMode {
     Linear,
-    Gaussian
+    Gaussian,
 }
 
 #[derive(Clone, Copy)]
 pub struct VoiceOutput {
     pub left_out: i32,
     pub right_out: i32,
-    pub last_voice_out: i32
+    pub last_voice_out: i32,
 }
 
 impl VoiceOutput {
@@ -25,7 +25,7 @@ impl VoiceOutput {
         VoiceOutput {
             left_out: 0,
             right_out: 0,
-            last_voice_out: 0
+            last_voice_out: 0,
         }
     }
 }
@@ -33,23 +33,16 @@ impl VoiceOutput {
 pub const VOICE_BUFFER_LEN: usize = 128;
 
 pub struct VoiceBuffer {
-    pub buffer: Box<[VoiceOutput; VOICE_BUFFER_LEN]>,
-    pub pos: i32
+    pub buffer: Box<[VoiceOutput]>,
+    pub pos: i32,
 }
 
 impl VoiceBuffer {
     pub fn new() -> VoiceBuffer {
         VoiceBuffer {
-            buffer: Box::new([VoiceOutput::default(); VOICE_BUFFER_LEN]),
-            pos: 0
+            buffer: vec![VoiceOutput::default(); VOICE_BUFFER_LEN].into_boxed_slice(),
+            pos: 0,
         }
-    }
-
-    pub fn reset(&mut self) {
-        for i in 0..VOICE_BUFFER_LEN {
-            self.buffer[i] = VoiceOutput::default();
-        }
-        self.pos = 0;
     }
 
     pub fn write(&mut self, value: VoiceOutput) {
@@ -62,7 +55,7 @@ pub struct Voice {
     dsp: *mut Dsp,
     emulator: *mut Apu,
 
-    pub envelope: Box<Envelope>,
+    pub envelope: Envelope,
 
     pub vol_left: u8,
     pub vol_right: u8,
@@ -75,7 +68,7 @@ pub struct Voice {
 
     sample_start_address: u32,
     loop_start_address: u32,
-    brr_block_decoder: Box<BrrBlockDecoder>,
+    brr_block_decoder: BrrBlockDecoder,
     sample_address: u32,
     sample_pos: i32,
 
@@ -83,23 +76,23 @@ pub struct Voice {
     resample_buffer: [i32; RESAMPLE_BUFFER_LEN],
     resample_buffer_pos: usize,
 
-    pub output_buffer: Box<VoiceBuffer>,
+    pub output_buffer: VoiceBuffer,
     pub is_muted: bool,
-    pub is_solod: bool
+    pub is_solod: bool,
 }
 
 impl Voice {
     pub fn new(dsp: *mut Dsp, emulator: *mut Apu, resampling_mode: ResamplingMode) -> Voice {
-        let mut ret = Voice {
+        Voice {
             dsp: dsp,
             emulator: emulator,
 
-            envelope: Box::new(Envelope::new(dsp)),
+            envelope: Envelope::new(dsp),
 
             vol_left: 0,
             vol_right: 0,
             pitch_low: 0,
-            pitch_high: 0,
+            pitch_high: 0x10,
             source: 0,
             pitch_mod: false,
             noise_on: false,
@@ -107,7 +100,7 @@ impl Voice {
 
             sample_start_address: 0,
             loop_start_address: 0,
-            brr_block_decoder: Box::new(BrrBlockDecoder::new()),
+            brr_block_decoder: BrrBlockDecoder::new(),
             sample_address: 0,
             sample_pos: 0,
 
@@ -115,12 +108,10 @@ impl Voice {
             resample_buffer: [0; RESAMPLE_BUFFER_LEN],
             resample_buffer_pos: 0,
 
-            output_buffer: Box::new(VoiceBuffer::new()),
+            output_buffer: VoiceBuffer::new(),
             is_muted: false,
-            is_solod: false
-        };
-        ret.reset();
-        ret
+            is_solod: false,
+        }
     }
 
     #[inline]
@@ -135,33 +126,6 @@ impl Voice {
         unsafe {
             &mut (*self.emulator)
         }
-    }
-
-    pub fn reset(&mut self) {
-        self.envelope.reset();
-
-        self.vol_left = 0;
-        self.vol_right = 0;
-        self.pitch_low = 0;
-        self.pitch_high = 0x10;
-        self.source = 0;
-        self.pitch_mod = false;
-        self.noise_on = false;
-
-        self.sample_start_address = 0;
-        self.loop_start_address = 0;
-        self.brr_block_decoder.reset(0, 0);
-        self.sample_address = 0;
-        self.sample_pos = 0;
-
-        for i in 0..RESAMPLE_BUFFER_LEN {
-            self.resample_buffer[i] = 0;
-        }
-        self.resample_buffer_pos = 0;
-
-        self.output_buffer.reset();
-        self.is_muted = false;
-        self.is_solod = false;
     }
 
     pub fn render_sample(&mut self, last_voice_out: i32, noise: i32, are_any_voices_solod: bool) -> VoiceOutput {

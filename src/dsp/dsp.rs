@@ -25,9 +25,9 @@ pub struct Dsp {
 
     pub voices: Vec<Box<Voice>>,
 
-    left_filter: Box<Filter>,
-    right_filter: Box<Filter>,
-    pub output_buffer: Box<RingBuffer>,
+    left_filter: Filter,
+    right_filter: Filter,
+    pub output_buffer: RingBuffer,
 
     vol_left: u8,
     vol_right: u8,
@@ -59,26 +59,26 @@ impl Dsp {
 
             voices: Vec::with_capacity(NUM_VOICES),
 
-            left_filter: Box::new(Filter::new()),
-            right_filter: Box::new(Filter::new()),
-            output_buffer: Box::new(RingBuffer::new()),
+            left_filter: Filter::new(),
+            right_filter: Filter::new(),
+            output_buffer: RingBuffer::new(),
 
-            vol_left: 0,
-            vol_right: 0,
-            echo_vol_left: 0,
-            echo_vol_right: 0,
+            vol_left: 0x89,
+            vol_right: 0x9c,
+            echo_vol_left: 0x9f,
+            echo_vol_right: 0x9c,
             noise_clock: 0,
             echo_write_enabled: false,
             echo_feedback: 0,
             source_dir: 0,
-            echo_start_address: 0,
-            echo_delay: 0,
+            echo_start_address: Dsp::calculate_echo_start_address(0x60),
+            echo_delay: 0x0e,
 
             counter: 0,
 
             cycles_since_last_flush: 0,
             is_flushing: false,
-            noise: 0,
+            noise: 0x4000,
             echo_pos: 0,
             echo_length: 0,
 
@@ -88,7 +88,15 @@ impl Dsp {
         for _ in 0..NUM_VOICES {
             ret.voices.push(Box::new(Voice::new(ret_ptr, emulator, resampling_mode)));
         }
-        ret.reset();
+        ret.set_filter_coefficient(0x00, 0x80);
+        ret.set_filter_coefficient(0x01, 0xff);
+        ret.set_filter_coefficient(0x02, 0x9a);
+        ret.set_filter_coefficient(0x03, 0xff);
+        ret.set_filter_coefficient(0x04, 0x67);
+        ret.set_filter_coefficient(0x05, 0xff);
+        ret.set_filter_coefficient(0x06, 0x0f);
+        ret.set_filter_coefficient(0x07, 0xff);
+        ret.set_resampling_mode(ResamplingMode::Gaussian);
         ret
     }
 
@@ -102,46 +110,6 @@ impl Dsp {
     fn set_filter_coefficient(&mut self, index: i32, value: u8) {
         self.left_filter.coefficients[index as usize] = value;
         self.right_filter.coefficients[index as usize] = value;
-    }
-
-    pub fn reset(&mut self) {
-        for voice in self.voices.iter_mut() {
-            voice.reset();
-        }
-
-        self.left_filter.reset();
-        self.right_filter.reset();
-        self.output_buffer.reset();
-
-        self.vol_left = 0x89;
-        self.vol_right = 0x9c;
-        self.echo_vol_left = 0x9f;
-        self.echo_vol_right = 0x9c;
-        self.noise_clock = 0;
-        self.echo_write_enabled = false;
-        self.echo_feedback = 0;
-        self.source_dir = 0;
-        self.echo_start_address = Dsp::calculate_echo_start_address(0x60);
-        self.echo_delay = 0x0e;
-
-        self.set_filter_coefficient(0x00, 0x80);
-        self.set_filter_coefficient(0x01, 0xff);
-        self.set_filter_coefficient(0x02, 0x9a);
-        self.set_filter_coefficient(0x03, 0xff);
-        self.set_filter_coefficient(0x04, 0x67);
-        self.set_filter_coefficient(0x05, 0xff);
-        self.set_filter_coefficient(0x06, 0x0f);
-        self.set_filter_coefficient(0x07, 0xff);
-
-        self.counter = 0;
-
-        self.cycles_since_last_flush = 0;
-        self.is_flushing = false;
-        self.noise = 0x4000;
-        self.echo_pos = 0;
-        self.echo_length = 0;
-
-        self.set_resampling_mode(ResamplingMode::Gaussian);
     }
 
     pub fn resampling_mode(&self) -> ResamplingMode {

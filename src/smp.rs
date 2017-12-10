@@ -25,17 +25,17 @@ pub struct Smp {
 
 impl Smp {
     pub fn new(emulator: *mut Apu) -> Smp {
-        let mut ret = Smp {
+        Smp {
             emulator: emulator,
 
-            reg_pc: 0,
+            reg_pc: 0xffc0,
             reg_a: 0,
             reg_x: 0,
             reg_y: 0,
-            reg_sp: 0,
+            reg_sp: 0xef,
 
             psw_c: false,
-            psw_z: false,
+            psw_z: true,
             psw_h: false,
             psw_p: false,
             psw_v: false,
@@ -46,9 +46,7 @@ impl Smp {
             is_stopped: false,
 
             cycle_count: 0
-        };
-        ret.reset();
-        ret
+        }
     }
 
     #[inline]
@@ -56,18 +54,6 @@ impl Smp {
         unsafe {
             &mut (*self.emulator)
         }
-    }
-
-    pub fn reset(&mut self) {
-        self.reg_pc = 0xffc0;
-        self.reg_a = 0;
-        self.reg_x = 0;
-        self.reg_y = 0;
-        self.reg_sp = 0xef;
-
-        self.set_psw(0x02);
-
-        self.is_stopped = false;
     }
 
     pub fn set_reg_ya(&mut self, value: u16) {

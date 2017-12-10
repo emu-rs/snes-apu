@@ -19,16 +19,6 @@ impl RingBuffer {
         }
     }
 
-    pub fn reset(&mut self) {
-        for i in 0..BUFFER_LEN {
-            self.left_buffer[i] = 0;
-            self.right_buffer[i] = 0;
-        }
-        self.write_pos = 0;
-        self.read_pos = 0;
-        self.sample_count = 0;
-    }
-
     pub fn write_sample(&mut self, left: i16, right: i16) {
         self.left_buffer[self.write_pos as usize] = left;
         self.right_buffer[self.write_pos as usize] = right;

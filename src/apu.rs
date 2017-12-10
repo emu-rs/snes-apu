@@ -11,7 +11,8 @@ static DEFAULT_IPL_ROM: [u8; IPL_ROM_LEN] = [
     0xcb, 0xf4, 0xd7, 0x00, 0xfc, 0xd0, 0xf3, 0xab,
     0x01, 0x10, 0xef, 0x7e, 0xf4, 0x10, 0xeb, 0xba,
     0xf6, 0xda, 0x00, 0xba, 0xf4, 0xc4, 0xf4, 0xdd,
-    0x5d, 0xd0, 0xdb, 0x1f, 0x00, 0x00, 0xc0, 0xff];
+    0x5d, 0xd0, 0xdb, 0x1f, 0x00, 0x00, 0xc0, 0xff,
+];
 
 pub struct Apu {
     ram: Box<[u8]>,
@@ -30,7 +31,7 @@ impl Apu {
     pub fn new() -> Box<Apu> {
         let mut ret = Box::new(Apu {
             ram: vec![0; RAM_LEN].into_boxed_slice(),
-            ipl_rom: vec![0; IPL_ROM_LEN].into_boxed_slice(),
+            ipl_rom: DEFAULT_IPL_ROM.iter().cloned().collect::<Vec<_>>().into_boxed_slice(),
 
             smp: None,
             dsp: None,
@@ -43,27 +44,41 @@ impl Apu {
         let ret_ptr = &mut *ret as *mut _;
         ret.smp = Some(Box::new(Smp::new(ret_ptr)));
         ret.dsp = Some(Dsp::new(ret_ptr));
-        ret.reset();
         ret
     }
 
-    pub fn reset(&mut self) {
+    pub fn from_spc(spc: &Spc) -> Box<Apu> {
+        let mut ret = Apu::new();
+
         for i in 0..RAM_LEN {
-            self.ram[i] = 0;
+            ret.ram[i] = spc.ram[i];
         }
-
         for i in 0..IPL_ROM_LEN {
-            self.ipl_rom[i] = DEFAULT_IPL_ROM[i];
+            ret.ipl_rom[i] = spc.ipl_rom[i];
         }
 
-        self.smp.as_mut().unwrap().reset();
-        self.dsp.as_mut().unwrap().reset();
-        for timer in self.timers.iter_mut() {
-            timer.reset();
+        {
+            let smp = ret.smp.as_mut().unwrap();
+            smp.reg_pc = spc.pc;
+            smp.reg_a = spc.a;
+            smp.reg_x = spc.x;
+            smp.reg_y = spc.y;
+            smp.set_psw(spc.psw);
+            smp.reg_sp = spc.sp;
         }
 
-        self.is_ipl_rom_enabled = true;
-        self.dsp_reg_address = 0;
+        ret.dsp.as_mut().unwrap().set_state(spc);
+
+        for i in 0..3 {
+            let target = ret.ram[0xfa + i];
+            ret.timers[i].set_target(target);
+        }
+        let control_reg = ret.ram[0xf1];
+        ret.set_control_reg(control_reg);
+
+        ret.dsp_reg_address = ret.ram[0xf2];
+
+        ret
     }
 
     pub fn render(&mut self, left_buffer: &mut [i16], right_buffer: &mut [i16], num_samples: i32) {
@@ -128,37 +143,6 @@ impl Apu {
         } else {
             self.ram[address as usize] = value;
         }
-    }
-
-    pub fn set_state(&mut self, spc: &Spc) {
-        self.reset();
-
-        for i in 0..RAM_LEN {
-            self.ram[i] = spc.ram[i];
-        }
-        for i in 0..IPL_ROM_LEN {
-            self.ipl_rom[i] = spc.ipl_rom[i];
-        }
-
-        {
-            let smp = self.smp.as_mut().unwrap();
-            smp.reg_pc = spc.pc;
-            smp.reg_a = spc.a;
-            smp.reg_x = spc.x;
-            smp.reg_y = spc.y;
-            smp.set_psw(spc.psw);
-            smp.reg_sp = spc.sp;
-        }
-
-        self.dsp.as_mut().unwrap().set_state(spc);
-
-        for i in 0..3 {
-            self.timers[i].set_target(self.ram[0xfa + i]);
-        }
-        let control_reg = self.ram[0xf1];
-        self.set_control_reg(control_reg);
-
-        self.dsp_reg_address = self.ram[0xf2];
     }
 
     pub fn clear_echo_buffer(&mut self) {

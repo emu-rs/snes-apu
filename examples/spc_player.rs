@@ -50,8 +50,7 @@ fn play_spc_file<P: AsRef<Path> + Display>(path: P) -> Result<(), Cow<'static, s
 
     print_spc_info(path, &spc);
 
-    let mut apu = Apu::new();
-    apu.set_state(&spc);
+    let mut apu = Apu::from_spc(&spc);
     // Most SPC's have crap in the echo buffer on startup, so while it's not technically correct, we'll clear that.
     // The example for blargg's APU emulator (which is known to be the most accurate there is) also does this, so I
     //  think we're OK to do it too :)
