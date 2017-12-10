@@ -14,8 +14,8 @@ static DEFAULT_IPL_ROM: [u8; IPL_ROM_LEN] = [
     0x5d, 0xd0, 0xdb, 0x1f, 0x00, 0x00, 0xc0, 0xff];
 
 pub struct Apu {
-    ram: Box<[u8; RAM_LEN]>,
-    ipl_rom: Box<[u8; IPL_ROM_LEN]>,
+    ram: Box<[u8]>,
+    ipl_rom: Box<[u8]>,
 
     pub smp: Option<Box<Smp>>,
     pub dsp: Option<Box<Dsp>>,
@@ -29,8 +29,8 @@ pub struct Apu {
 impl Apu {
     pub fn new() -> Box<Apu> {
         let mut ret = Box::new(Apu {
-            ram: Box::new([0; RAM_LEN]),
-            ipl_rom: Box::new([0; IPL_ROM_LEN]),
+            ram: vec![0; RAM_LEN].into_boxed_slice(),
+            ipl_rom: vec![0; IPL_ROM_LEN].into_boxed_slice(),
 
             smp: None,
             dsp: None,

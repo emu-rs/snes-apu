@@ -1,8 +1,8 @@
 use super::dsp::BUFFER_LEN;
 
 pub struct RingBuffer {
-    left_buffer: Box<[i16; BUFFER_LEN]>,
-    right_buffer: Box<[i16; BUFFER_LEN]>,
+    left_buffer: Box<[i16]>,
+    right_buffer: Box<[i16]>,
     write_pos: i32,
     read_pos: i32,
     sample_count: i32
@@ -11,8 +11,8 @@ pub struct RingBuffer {
 impl RingBuffer {
     pub fn new() -> RingBuffer {
         RingBuffer {
-            left_buffer: Box::new([0; BUFFER_LEN]),
-            right_buffer: Box::new([0; BUFFER_LEN]),
+            left_buffer: vec![0; BUFFER_LEN].into_boxed_slice(),
+            right_buffer: vec![0; BUFFER_LEN].into_boxed_slice(),
             write_pos: 0,
             read_pos: 0,
             sample_count: 0
