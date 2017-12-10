@@ -6,7 +6,7 @@ This is a highly-accurate emulator for the audio portion of the Super Nintendo.
 
 Included is an example that can play SPC files:
 
-`cargo run --release --example spc_player -- test/ferris-nu.spc`
+`cargo run --example spc_player test/ferris-nu.spc`
 
 The audio unit is made up of a few major parts:
 - A CPU (SPC700 core), which is 100% cycle-accurate
@@ -16,14 +16,7 @@ The audio unit is made up of a few major parts:
 - And some extra glue here and there to tie it all together :)
 
 ## Shortcomings
-While the emulation itself is highly-accurate (no known bugs minus some things that aren't implemented fully, such as DSP register reads
-and startup state), and the vast majority of the code can be considered idiomatic Rust code (to the best of my knowledge), there are some
-small remaining "cosmetic issues" that need to be addressed.
-
-Namely, some unsafe code is used in a few places for internal mutability without runtime checks. Proper wrapping number types are also not
-currently used, so the emu can only run properly if built in the release config. Both of these issues will be addressed soon.
-
-Additional issues can be found in the issue tracker on Github.
+While the emulation itself is highly-accurate (no known bugs minus some things that aren't implemented fully, such as DSP register reads and startup state), and the vast majority of the code can be considered idiomatic Rust code (to the best of my knowledge), there are some small remaining "cosmetic issues" that need to be addressed. Namely, some unsafe code is used in a few places for internal mutability without runtime checks. Additional issues can be found in the issue tracker on Github.
 
 ## Extras
 Included in the `test` directory are a couple of test SPC files:
