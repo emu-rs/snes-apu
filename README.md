@@ -6,9 +6,7 @@ This is a highly-accurate emulator for the audio portion of the Super Nintendo.
 
 Included is an example that can play SPC files:
 
-`cargo run --release --example spc_player -- test/ferris-nu.spc test/smashit.spc`
-
-_Note: Due to current limitations in [the emu project](https://github.com/emu-rs/emu) on which this depends, the included spc_player example will only build on OS X. Other platforms will be supported promptly._
+`cargo run --release --example spc_player -- test/ferris-nu.spc`
 
 The audio unit is made up of a few major parts:
 - A CPU (SPC700 core), which is 100% cycle-accurate
@@ -16,9 +14,6 @@ The audio unit is made up of a few major parts:
 - 64kb RAM
 - 3 timers
 - And some extra glue here and there to tie it all together :)
-
-This emulator serves as a pilot for [porting all of my
-emulator infrastructure to Rust](https://github.com/emu-rs/emu), and it's been a rather successful project thus far.
 
 ## Shortcomings
 While the emulation itself is highly-accurate (no known bugs minus some things that aren't implemented fully, such as DSP register reads
