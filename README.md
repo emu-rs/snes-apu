@@ -8,15 +8,14 @@ Included is an example that can play SPC files:
 
 `cargo run --example spc_player test/ferris-nu.spc`
 
+> Note that you may want to run the above example in release config, as the emulator can be quite slow in debug builds.
+
 The audio unit is made up of a few major parts:
 - A CPU (SPC700 core), which is 100% cycle-accurate
 - A DSP, which is accurate to the nearest audio sample
 - 64kb RAM
 - 3 timers
 - And some extra glue here and there to tie it all together :)
-
-## Shortcomings
-While the emulation itself is highly-accurate (no known bugs minus some things that aren't implemented fully, such as DSP register reads and startup state), and the vast majority of the code can be considered idiomatic Rust code (to the best of my knowledge), there are some small remaining "cosmetic issues" that need to be addressed. Namely, some unsafe code is used in a few places for internal mutability without runtime checks. Additional issues can be found in the issue tracker on Github.
 
 ## Extras
 Included in the `test` directory are a couple of test SPC files:
